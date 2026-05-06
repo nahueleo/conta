@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Conta · Servicio de Contabilidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">⌬</div>
+      <div>
+        <div class="brand-name">Conta</div>
+        <div class="brand-sub">Accounting Service</div>
+      </div>
+    </div>
+
+    <div class="tenant-switch">
+      <div class="label">Empresa</div>
+      <select id="company">
+        <option>ACME S.A.</option>
+        <option>Distribuidora del Plata</option>
+        <option>Nube Retail SAS</option>
+      </select>
+      <div class="label" style="margin-top:10px">Ejercicio</div>
+      <select id="year">
+        <option>2026 (abierto)</option>
+        <option>2025 (cerrado)</option>
+        <option>2024 (cerrado)</option>
+      </select>
+    </div>
+
+    <nav>
+      <a href="#/onboarding" data-route="onboarding" style="background: rgba(108,140,255,.10); margin-bottom: 6px"><span>🚀</span> Onboarding</a>
+      <a href="#/dashboard" data-route="dashboard"><span>📊</span> Dashboard</a>
+      <a href="#/diario" data-route="diario"><span>📓</span> Libro Diario</a>
+      <a href="#/mayor" data-route="mayor"><span>📒</span> Libro Mayor</a>
+      <a href="#/plan" data-route="plan"><span>🗂️</span> Plan de Cuentas</a>
+      <a href="#/reglas" data-route="reglas"><span>⚙️</span> Posting Rules</a>
+      <a href="#/reportes" data-route="reportes"><span>📈</span> Reportes</a>
+      <div class="submenu">
+        <a href="#/reportes/balance"        data-route="reportes/balance"><span>·</span> Balance General</a>
+        <a href="#/reportes/cashflow"       data-route="reportes/cashflow"><span>·</span> Flujo de Efectivo</a>
+        <a href="#/reportes/pn"             data-route="reportes/pn"><span>·</span> Evolución del PN</a>
+        <a href="#/reportes/aged-cxc"       data-route="reportes/aged-cxc"><span>·</span> Antigüedad CxC</a>
+        <a href="#/reportes/aged-cxp"       data-route="reportes/aged-cxp"><span>·</span> Antigüedad CxP</a>
+        <a href="#/reportes/conciliacion"   data-route="reportes/conciliacion"><span>·</span> Conciliación bancaria</a>
+        <a href="#/reportes/rent-sucursal"  data-route="reportes/rent-sucursal"><span>·</span> Rent. por Sucursal</a>
+        <a href="#/reportes/rent-bu"        data-route="reportes/rent-bu"><span>·</span> Rent. por BU</a>
+        <a href="#/reportes/gastos"         data-route="reportes/gastos"><span>·</span> Análisis de gastos</a>
+        <a href="#/reportes/presupuesto"    data-route="reportes/presupuesto"><span>·</span> Presupuesto vs Real</a>
+        <a href="#/reportes/iva"            data-route="reportes/iva"><span>·</span> Reporte fiscal IVA</a>
+      </div>
+      <a href="#/cierre" data-route="cierre"><span>🔒</span> Cierre de Ejercicio</a>
+      <a href="#/remesas" data-route="remesas"><span>🔄</span> Remesas</a>
+      <a href="#/gateway" data-route="gateway"><span>🔌</span> ERP Gateway</a>
+      <a href="#/config" data-route="config"><span>🛠️</span> Configuración</a>
+    </nav>
+
+    <div class="footer">
+      <div class="user">
+        <div class="avatar">LM</div>
+        <div>
+          <div class="user-name">Leonardo Mercado</div>
+          <div class="user-role">Admin contable</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="view"></main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
