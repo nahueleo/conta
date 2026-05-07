@@ -16,11 +16,11 @@
 * { box-sizing: border-box; }
 html, body { margin:0; padding:0; min-height:100%; background: var(--bg); color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 14px; }
-body { display:flex; padding-top: 74px; }
+body { display:flex; padding-top: 74px; height: 100vh; overflow: hidden; }
 
 /* ───── Topbar ───── */
 .topbar {
-  position: fixed; left: 260px; right: 0; top: 0; height: 74px;
+  position: fixed; left: 0; right: 0; top: 0; height: 74px;
   display: flex; align-items: center; justify-content: space-between;
   gap: 18px; padding: 0 24px; background: linear-gradient(90deg, #1f75e4 0%, #1c64f2 100%);
   color: #ffffff; box-shadow: 0 14px 36px rgba(23,32,51,.14); z-index: 20;
@@ -56,6 +56,7 @@ body { display:flex; padding-top: 74px; }
   border:1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 13px; }
 
 nav { display:flex; flex-direction:column; gap:4px; padding-top: 14px; flex:1; }
+nav { min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
 nav a { display:flex; align-items:center; gap:12px; padding:11px 14px; color: var(--muted); text-decoration:none;
   border-radius: 14px; font-size: 13.5px; font-weight: 600; transition: background .2s, color .2s; }
 nav a:hover { background: #f4f7ff; color: var(--text); }
@@ -82,7 +83,7 @@ nav a span { width: 20px; display:inline-block; text-align:center; }
 .user-role { font-size: 11px; color: var(--muted); }
 
 /* ───── Main ───── */
-main { flex: 1; padding: 26px 32px; max-width: calc(100vw - 260px); margin-top: 14px; }
+main { flex: 1; padding: 26px 32px; max-width: calc(100vw - 260px); margin-top: 0; overflow: auto; }
 .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 22px; gap:16px; }
 .page-title { font-size: 26px; font-weight: 700; margin:0; }
 .page-sub { color: var(--muted); margin-top: 4px; font-size: 13px; }
