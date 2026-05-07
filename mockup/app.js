@@ -984,14 +984,40 @@ function renderReporteBalance() {
 }
 
 function renderReporteBalanceAnalitico() {
-  const rows = DATA.balanceAnalitico;
+  const inferredRows = (DATA.trialBalance || []).map(r => {
+    const first = (r.code || '').split('.')[0];
+    const type = first === '1' ? 'Activo'
+      : first === '2' ? 'Pasivo'
+      : first === '3' ? 'Patrimonio'
+      : first === '4' ? 'Ingresos'
+      : first === '5' ? 'Egresos'
+      : 'General';
+    const sector = type === 'Activo' || type === 'Egresos'
+      ? 'Operación'
+      : type === 'Ingresos'
+      ? 'Comercial'
+      : type === 'Pasivo'
+      ? 'Fiscal'
+      : 'General';
+    return { ...r, type, sector };
+  });
+  const rows = Array.isArray(DATA.balanceAnalitico) && DATA.balanceAnalitico.length > 0
+    ? DATA.balanceAnalitico
+    : inferredRows;
   const totalDr = rows.reduce((s, r) => s + r.dr, 0);
   const totalCr = rows.reduce((s, r) => s + r.cr, 0);
+  const sectorData = Array.isArray(DATA.balanceAnaliticoSector) && DATA.balanceAnaliticoSector.length > 0
+    ? DATA.balanceAnaliticoSector
+    : Object.entries(rows.reduce((acc, r) => {
+      const key = r.sector || 'General';
+      acc[key] = (acc[key] || 0) + (r.dr - r.cr);
+      return acc;
+    }, {})).map(([sector, balance]) => ({ sector, balance }));
 
   view.innerHTML = `
     ${pageHeader('Balance analítico', 'Detalle por cuenta con segmentación por tipo y sector',
       `<select><option>Moneda: ARS</option><option>USD</option><option>BRL</option></select>
-       <select><option>Sector: Todos</option>${DATA.sectores.map(s => `<option>${s.code} · ${s.name}</option>`).join('')}</select>`, 'trial-balance')}
+       <select><option>Sector: Todos</option>${(DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('')}</select>`, 'trial-balance')}
     <div class="filters">
       <input type="date" value="2026-04-01"/>
       <span class="sep">→</span>
@@ -1005,7 +1031,7 @@ function renderReporteBalanceAnalitico() {
       <div class="card"><div class="label">Total Debe</div><div class="value">${fmt(totalDr)}</div></div>
       <div class="card"><div class="label">Total Haber</div><div class="value">${fmt(totalCr)}</div></div>
       <div class="card"><div class="label">Diferencia</div><div class="value" style="color:${totalDr-totalCr===0?'var(--ok)':'var(--danger)'}">${fmt(totalDr-totalCr)}</div></div>
-      <div class="card"><div class="label">Sectores activos</div><div class="value">${DATA.sectores.filter(s => s.active).length}</div></div>
+      <div class="card"><div class="label">Sectores activos</div><div class="value">${(DATA.sectores || []).filter(s => s.active).length}</div></div>
     </div>
 
     <div class="grid-2">
@@ -1042,10 +1068,10 @@ function renderReporteBalanceAnalitico() {
   activeCharts.push(new Chart(document.getElementById('chartBalanceAnaliticoSector'), {
     type:'bar',
     data:{
-      labels: DATA.balanceAnaliticoSector.map(s => s.sector),
+      labels: sectorData.map(s => s.sector),
       datasets:[{
         label:'Saldo',
-        data: DATA.balanceAnaliticoSector.map(s => s.balance),
+        data: sectorData.map(s => s.balance),
         backgroundColor:['#6c8cff', '#4dd4ac', '#f5a524', '#ef4444']
       }]
     },
