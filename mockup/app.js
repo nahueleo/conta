@@ -814,6 +814,9 @@ function renderRemesas() {
 
 // ───── Configuración ─────
 function renderConfig() {
+  const sectores = Array.isArray(DATA.sectores) ? DATA.sectores : [];
+  const cuentasPorTipoSector = Array.isArray(DATA.cuentasPorTipoSector) ? DATA.cuentasPorTipoSector : [];
+
   view.innerHTML = `
     <div class="page-header">
       <div>
@@ -899,12 +902,13 @@ function renderConfig() {
         <table class="table">
           <thead><tr><th>Código</th><th>Sector</th><th>Uso principal</th><th>Estado</th></tr></thead>
           <tbody>
-            ${DATA.sectores.map(s => `<tr>
+            ${sectores.map(s => `<tr>
               <td><span class="kbd">${s.code}</span></td>
               <td>${s.name}</td>
               <td>${s.use}</td>
               <td>${s.active ? '<span class="tag ok">activo</span>' : '<span class="tag muted">inactivo</span>'}</td>
             </tr>`).join('')}
+            ${sectores.length === 0 ? '<tr><td colspan="4" class="muted">Sin sectores cargados</td></tr>' : ''}
           </tbody>
         </table>
         <div style="margin-top:10px; display:flex; gap:8px">
@@ -917,12 +921,13 @@ function renderConfig() {
         <table class="table">
           <thead><tr><th>Tipo</th><th>Sector</th><th>Cuenta por defecto</th><th>Regla</th></tr></thead>
           <tbody>
-            ${DATA.cuentasPorTipoSector.map(r => `<tr>
+            ${cuentasPorTipoSector.map(r => `<tr>
               <td><span class="tag muted">${r.type}</span></td>
               <td>${r.sector}</td>
               <td><span class="kbd">${r.account}</span> ${r.accountName}</td>
               <td class="muted">${r.rule}</td>
             </tr>`).join('')}
+            ${cuentasPorTipoSector.length === 0 ? '<tr><td colspan="4" class="muted">Sin mapeos configurados</td></tr>' : ''}
           </tbody>
         </table>
         <div style="margin-top:10px; display:flex; gap:8px">
