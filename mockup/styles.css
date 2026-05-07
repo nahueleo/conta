@@ -63,6 +63,14 @@ nav a.active { background: rgba(34,197,94,.12); color: #17233d; box-shadow: inse
 nav a span { width: 20px; display:inline-block; text-align:center; }
 
 .submenu { display: flex; flex-direction: column; gap: 1px; padding-left: 14px; margin: 2px 0 6px; border-left: 1px solid var(--border); }
+.submenu-title {
+  padding: 4px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .submenu a { padding: 6px 10px; font-size: 12.5px; color: var(--muted); }
 .submenu a span { width: 12px; opacity: .6; }
 

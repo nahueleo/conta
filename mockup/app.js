@@ -8,6 +8,7 @@ const routes = {
   'plan':                   renderPlan,
   'reglas':                 renderReglas,
   'reportes':               renderReportes,
+  'reportes-gerenciales':   renderReportesGerenciales,
   'reportes/balance':       renderReporteBalance,
   'reportes/balance-analitico': renderReporteBalanceAnalitico,
   'reportes/cashflow':      renderReporteCashflow,
@@ -193,6 +194,10 @@ function renderDiario() {
       <input type="date" value="${diarioState.filters.from}" onchange="diarioState.filters.from=this.value"/>
       <span class="sep">→</span>
       <input type="date" value="${diarioState.filters.to}" onchange="diarioState.filters.to=this.value"/>
+      <select>
+        <option value="">Sector: Todos</option>
+        ${(DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('')}
+      </select>
       <select onchange="diarioState.filters.branch=this.value">
         <option value="">Sucursal: Todas</option>
         <option>CABA</option><option>Rosario</option><option>Mendoza</option><option>Online</option>
@@ -343,6 +348,10 @@ function renderMayor() {
     </div>
     <div class="filters">
       <select style="min-width:280px"><option>1.1.02.001 — Banco Galicia</option><option>1.1.01.001 — Caja general</option><option>4.1.01.001 — Ventas</option></select>
+      <select>
+        <option>Sector: Todos</option>
+        ${(DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('')}
+      </select>
       <input type="date" value="2026-01-01"/><span class="sep">→</span><input type="date" value="2026-04-30"/>
       <button class="btn btn-primary">Consultar</button>
     </div>
@@ -545,6 +554,7 @@ function renderReportes() {
       <div class="toolbar">
         <select><option>Ejercicio 2026</option><option>Ejercicio 2025</option></select>
         <select><option>Mensual</option><option>Trimestral</option><option>Anual</option></select>
+        <select><option>Sector: Todos</option>${(DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('')}</select>
         <button class="btn" onclick="openReportConfig('trial-balance')">⚙ Config Sumas y Saldos</button>
         <button class="btn" onclick="openReportConfig('income-statement')">⚙ Config Resultados</button>
         <button class="btn">PDF</button>
@@ -647,6 +657,47 @@ function renderReportes() {
       ]},
     options: chartOpts()
   }));
+}
+
+function renderReportesGerenciales() {
+  view.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Reportes gerenciales</h1>
+        <div class="page-sub">Propuestos para una etapa posterior · requieren datos de ventas, clientes y cuenta corriente</div>
+      </div>
+      <div class="toolbar">
+        <a href="#/reportes" class="btn">← Reportes contables</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Alcance actual del sistema</h3>
+      <p class="muted" style="margin-top:0">Conta prioriza registración contable y reportes financieros. Los siguientes reportes se mantienen como roadmap y dependen de integración con ERP/comercial.</p>
+      <ul class="checklist">
+        <li>📌 Antigüedad CxC: requiere maestro de clientes y movimientos de cta cte</li>
+        <li>📌 Antigüedad CxP: requiere proveedores y vencimientos operativos</li>
+        <li>📌 Rentabilidad por sucursal / BU: requiere asignación de ingresos/costos comerciales</li>
+        <li>📌 Presupuesto vs Real: requiere presupuesto operativo cargado por áreas</li>
+      </ul>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <h3>Reportes propuestos</h3>
+      <div class="grid-3" style="margin-top:0">
+        ${[
+          ['Antigüedad CxC', 'Requiere clientes + cta cte', 'reportes/aged-cxc'],
+          ['Antigüedad CxP', 'Requiere proveedores + cta cte', 'reportes/aged-cxp'],
+          ['Rentabilidad por Sucursal', 'Requiere datos comerciales', 'reportes/rent-sucursal'],
+          ['Rentabilidad por BU', 'Requiere asignación analítica', 'reportes/rent-bu'],
+          ['Análisis de gastos', 'Requiere clasificación operativa extendida', 'reportes/gastos'],
+          ['Presupuesto vs Real', 'Requiere presupuesto base', 'reportes/presupuesto'],
+        ].map(([t,d,r])=>`
+          <div class="rule-line"><strong>${t}</strong><div class="muted" style="font-size:12px">${d}</div>
+            <a href="#/${r}" class="btn" style="margin-top:8px; display:inline-block; text-decoration:none">Ver mockup →</a></div>`).join('')}
+      </div>
+    </div>
+  `;
 }
 
 // ───── Cierre ─────
@@ -885,6 +936,7 @@ function renderConfig() {
 
 // ───── helpers compartidos ─────
 function pageHeader(title, sub, toolbar='', reportKey=null) {
+  const sectorOptions = (DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('');
   return `<div class="page-header">
     <div>
       <h1 class="page-title">${title}</h1>
@@ -893,6 +945,7 @@ function pageHeader(title, sub, toolbar='', reportKey=null) {
     <div class="toolbar">
       <a href="#/reportes" class="btn">← Reportes</a>
       ${toolbar}
+      <select><option>Sector: Todos</option>${sectorOptions}</select>
       ${reportKey ? `<button class="btn" onclick="openReportConfig('${reportKey}')">⚙ Configurar</button>` : ''}
       <button class="btn">PDF</button><button class="btn">Excel</button>
     </div>
@@ -1016,8 +1069,7 @@ function renderReporteBalanceAnalitico() {
 
   view.innerHTML = `
     ${pageHeader('Balance analítico', 'Detalle por cuenta con segmentación por tipo y sector',
-      `<select><option>Moneda: ARS</option><option>USD</option><option>BRL</option></select>
-       <select><option>Sector: Todos</option>${(DATA.sectores || []).map(s => `<option>${s.code} · ${s.name}</option>`).join('')}</select>`, 'trial-balance')}
+      `<select><option>Moneda: ARS</option><option>USD</option><option>BRL</option></select>`, 'trial-balance')}
     <div class="filters">
       <input type="date" value="2026-04-01"/>
       <span class="sep">→</span>
