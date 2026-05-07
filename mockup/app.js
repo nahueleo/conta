@@ -2882,20 +2882,25 @@ function tabTemplates(key) {
 // ───── ONBOARDING WIZARD ─────
 let onboardingState = {
   step: 1,
-  mode: null,         // 'greenfield' | 'bootstrap' | 'federated'
+  integrationModel: 'federated',
   adapters: {
-    company:       'local',
-    branches:      'hybrid',
-    businessUnits: 'hybrid',
-    currencies:    'hybrid',
-    users:         'federated',
-    roles:         'federated',
+    tenant:        'token',
+    company:       'federated',
+    branches:      'federated',
+    businessUnits: 'federated',
+    currencies:    'federated',
     customers:     'federated',
     suppliers:     'federated',
   },
   erpPayload: {
-    erp: 'SAP Business One',
+    erp: 'Kiboo ERP',
     tenant: 'tenant-acme-2026',
+    tokenContext: {
+      tenantId: 'tenant-acme-2026',
+      companyId: 'acme-ar',
+      environment: 'production',
+      scopes: ['accounting.read', 'accounting.post', 'accounting.config.write'],
+    },
     company: { legalName: 'ACME S.A.', taxId: '30-71234567-9', country: 'AR', regime: 'Responsable Inscripto' },
     branches: [
       { code:'CABA',    name:'Casa central CABA',    city:'Buenos Aires', country:'AR' },
@@ -2934,64 +2939,42 @@ let onboardingState = {
 };
 
 function setOnboardingStep(step) {
-  if (step < 1 || step > 7) return;
+  if (step < 1 || step > 5) return;
   onboardingState.step = step;
-  renderOnboarding();
-}
-
-function setOnboardingMode(mode) {
-  onboardingState.mode = mode;
-  // adapter defaults por modo
-  if (mode === 'greenfield') {
-    onboardingState.adapters = { company:'local', branches:'local', businessUnits:'local', currencies:'local',
-      users:'local', roles:'local', customers:'local', suppliers:'local' };
-  } else if (mode === 'bootstrap') {
-    onboardingState.adapters = { company:'local', branches:'hybrid', businessUnits:'hybrid', currencies:'hybrid',
-      users:'hybrid', roles:'hybrid', customers:'hybrid', suppliers:'hybrid' };
-  } else if (mode === 'federated') {
-    onboardingState.adapters = { company:'federated', branches:'federated', businessUnits:'federated', currencies:'federated',
-      users:'federated', roles:'federated', customers:'federated', suppliers:'federated' };
-  }
-  renderOnboarding();
-}
-
-function setAdapter(entity, value) {
-  onboardingState.adapters[entity] = value;
   renderOnboarding();
 }
 
 function renderOnboarding() {
   const s = onboardingState.step;
-  const stepName = ['','Modo de instalación','Datos de empresa','Estructura organizacional','Plan de cuentas','Posting Rules','Identidad y permisos','Verificación'][s];
+  const stepName = ['','Cliente y alcance','Organización federada','Plan de cuentas','Posting Rules','Verificación'][s];
   const adapterValues = Object.values(onboardingState.adapters || {});
   const federatedCount = adapterValues.filter(v => v === 'federated').length;
-  const hybridCount = adapterValues.filter(v => v === 'hybrid').length;
-  const completion = Math.round((s / 7) * 100);
+  const completion = Math.round((s / 5) * 100);
 
   view.innerHTML = `
     <div class="wizard-shell">
       <div class="page-header">
         <div>
           <h1 class="page-title">🚀 Onboarding · ${stepName}</h1>
-          <div class="page-sub">Configurar la contabilidad de un nuevo cliente · paso ${s} de 7</div>
+          <div class="page-sub">Alta federada desde Kiboo ERP · tenant resuelto desde token · paso ${s} de 5</div>
         </div>
         <div class="toolbar">
           <button class="btn">Guardar borrador</button>
           ${s>1?`<button class="btn" onclick="setOnboardingStep(${s-1})">← Atrás</button>`:''}
-          ${s<7?`<button class="btn btn-primary" onclick="setOnboardingStep(${s+1})">Siguiente →</button>`:`<button class="btn btn-primary" onclick="alert('Onboarding completado · cliente operativo')">✓ Finalizar</button>`}
+          ${s<5?`<button class="btn btn-primary" onclick="setOnboardingStep(${s+1})">Siguiente →</button>`:`<button class="btn btn-primary" onclick="alert('Onboarding completado · tenant federado operativo')">✓ Finalizar</button>`}
         </div>
       </div>
 
       <div class="onboarding-kpis">
         <div class="onboarding-kpi">
-          <div class="k">Modo actual</div>
-          <div class="v">${onboardingState.mode ? onboardingState.mode.toUpperCase() : 'SIN DEFINIR'}</div>
-          <div class="d">Seleccioná la estrategia de integración</div>
+          <div class="k">Modelo</div>
+          <div class="v">FEDERADO</div>
+          <div class="d">Kiboo ERP resuelve tenant, maestros y seguridad</div>
         </div>
         <div class="onboarding-kpi">
           <div class="k">Adapters federados</div>
           <div class="v">${federatedCount}</div>
-          <div class="d">${hybridCount} híbridos · ${adapterValues.length - federatedCount - hybridCount} locales</div>
+          <div class="d">0 híbridos · 0 copias locales organizacionales</div>
         </div>
         <div class="onboarding-kpi">
           <div class="k">Eventos ERP detectados</div>
@@ -3001,7 +2984,7 @@ function renderOnboarding() {
         <div class="onboarding-kpi">
           <div class="k">Progreso onboarding</div>
           <div class="v">${completion}%</div>
-          <div class="d">Paso ${s} de 7</div>
+          <div class="d">Paso ${s} de 5</div>
         </div>
       </div>
 
@@ -3011,309 +2994,174 @@ function renderOnboarding() {
       </div>
 
       <div class="wizard-steps">
-        ${[1,2,3,4,5,6,7].map(i => {
-          const labels = ['Modo','Empresa','Organización','Plan cuentas','Posting Rules','Identidad','Verificación'];
+        ${[1,2,3,4,5].map(i => {
+          const labels = ['Cliente','Organización','Plan cuentas','Posting Rules','Verificación'];
           const cls = i===s ? 'active' : i<s ? 'done' : '';
           return `<div class="wstep ${cls}" onclick="setOnboardingStep(${i})" style="cursor:pointer">
             <span class="num">${i<s?'✓':i}</span>${labels[i-1]}</div>`;
         }).join('')}
       </div>
 
-      ${s===1 ? renderStep1Mode() : ''}
-      ${s===2 ? renderStep2Company() : ''}
-      ${s===3 ? renderStep3Org() : ''}
-      ${s===4 ? renderStep4COA() : ''}
-      ${s===5 ? renderStep5Rules() : ''}
-      ${s===6 ? renderStep6Identity() : ''}
-      ${s===7 ? renderStep7Verify() : ''}
+      ${s===1 ? renderStep1Company() : ''}
+      ${s===2 ? renderStep2Org() : ''}
+      ${s===3 ? renderStep3COA() : ''}
+      ${s===4 ? renderStep4Rules() : ''}
+      ${s===5 ? renderStep5Verify() : ''}
     </div>
   `;
 }
 
-// ── PASO 1: Modo de instalación
-function renderStep1Mode() {
-  const m = onboardingState.mode;
-  return `
-    <div class="panel">
-      <h3>¿Cómo querés inicializar Conta?</h3>
-      <p class="muted" style="margin-top:0">Elegí el modo que mejor se adapta al cliente. Podés cambiar adapters individuales en el siguiente paso.</p>
-
-      <div class="mode-grid">
-        <div class="mode-card ${m==='greenfield'?'selected':''}" onclick="setOnboardingMode('greenfield')">
-          <div class="mode-icon">🌱</div>
-          <h3>Greenfield</h3>
-          <div class="tagline">Cliente nuevo, sin sistemas previos</div>
-          <ul>
-            <li>Carga manual o template por país</li>
-            <li>Conta es la fuente de verdad de todo</li>
-            <li>Usuarios y roles locales</li>
-            <li>Ideal para microempresas y PyMEs</li>
-            <li>Onboarding en ~30 min</li>
-          </ul>
-        </div>
-
-        <div class="mode-card ${m==='bootstrap'?'selected':''}" onclick="setOnboardingMode('bootstrap')">
-          <div class="mode-icon">📦</div>
-          <h3>Bootstrap desde ERP <span class="recommended">Recomendado</span></h3>
-          <div class="tagline">El ERP envía los datos iniciales una sola vez</div>
-          <ul>
-            <li>ERP dispara <span class="kbd">accounting.install</span> con seed</li>
-            <li>Conta importa empresa, BU, sucursales, usuarios</li>
-            <li>Datos editables localmente luego del bootstrap</li>
-            <li>Sync periódico opcional</li>
-            <li>Ideal para empresas medianas y grandes</li>
-          </ul>
-        </div>
-
-        <div class="mode-card ${m==='federated'?'selected':''}" onclick="setOnboardingMode('federated')">
-          <div class="mode-icon">🔗</div>
-          <h3>Federado</h3>
-          <div class="tagline">Conta consume del ERP en runtime</div>
-          <ul>
-            <li>Conta no almacena BU, sucursales ni usuarios</li>
-            <li>Cada query consulta al ERP (con cache)</li>
-            <li>OIDC federado: una sola identidad</li>
-            <li>Cero divergencia, máxima consistencia</li>
-            <li>Ideal para corporaciones con ERP mature</li>
-          </ul>
-        </div>
-      </div>
-
-      ${m === 'bootstrap' ? `
-        <div class="panel" style="margin-top:20px; background: var(--bg-2)">
-          <h3>📥 Payload recibido del ERP</h3>
-          <p class="muted" style="font-size:12px">El ERP envió este evento <span class="kbd">accounting.install</span>. Vamos a procesarlo en los siguientes pasos.</p>
-          <pre class="code">POST /api/v1/install
-Source: ${onboardingState.erpPayload.erp}
-Idempotency-Key: ${onboardingState.erpPayload.tenant}
-{
-  "tenant":  "${onboardingState.erpPayload.tenant}",
-  "company": { "legalName": "${onboardingState.erpPayload.company.legalName}", ... },
-  "branches":      [ ${onboardingState.erpPayload.branches.length} items ],
-  "businessUnits": [ ${onboardingState.erpPayload.businessUnits.length} items ],
-  "currencies":    [ ${onboardingState.erpPayload.currencies.length} items ],
-  "users":         [ ${onboardingState.erpPayload.users.length} items ],
-  "eventsCatalog": [ ${onboardingState.erpPayload.eventsCatalog.length} triggers detectados ]
-}</pre>
-        </div>` : ''}
-
-      ${m === 'federated' ? `
-        <div class="panel" style="margin-top:20px; background: var(--bg-2)">
-          <h3>🔗 Conexión federada</h3>
-          <div class="form-grid">
-            <div class="form-group"><label>Endpoint base del ERP</label><input type="text" value="https://erp.acme.com/api/v1"/></div>
-            <div class="form-group"><label>Auth</label><select><option>OAuth2 Client Credentials</option><option>API Key</option><option>mTLS</option></select></div>
-            <div class="form-group"><label>Cache TTL para datos federados</label><select><option>5 min</option><option>15 min</option><option>1 h</option></select></div>
-            <div class="form-group"><label>Modo de fallback</label><select><option>Cache en memoria si ERP no responde</option><option>Devolver error</option></select></div>
-          </div>
-          <button class="btn" style="margin-top:12px">Probar conexión</button>
-        </div>` : ''}
-
-      <div class="alert info" style="margin-top:20px">
-        <div class="ico">💡</div>
-        <div class="body">
-          <div class="t">No tenés que elegir uno solo</div>
-          <div class="d">En el siguiente paso vas a poder elegir adapter por entidad: por ejemplo, traer las sucursales en modo Hybrid pero los usuarios en modo Federado.</div>
-        </div>
-      </div>
-    </div>`;
-}
-
-// ── PASO 2: Datos de empresa
-function renderStep2Company() {
+// ── PASO 1: Cliente resuelto por token
+function renderStep1Company() {
   const c = onboardingState.erpPayload.company;
-  const fromErp = onboardingState.mode !== 'greenfield';
+  const token = onboardingState.erpPayload.tokenContext;
   return `
     <div class="grid-2">
       <div class="panel">
-        <h3>Datos legales</h3>
-        ${fromErp ? `<div class="alert info"><div class="ico">📥</div><div class="body"><div class="t">Pre-cargado desde ERP</div><div class="d">Editable. Cambios quedan en Conta y se notifican al ERP.</div></div></div>` : ''}
-        <div class="form-grid full">
-          <div class="form-group"><label>Razón social <span class="req">*</span></label><input type="text" value="${c.legalName}"/></div>
-          <div class="form-group"><label>Nombre fantasía</label><input type="text" value="ACME"/></div>
-          <div class="form-group"><label>Tax ID (CUIT) <span class="req">*</span></label><input type="text" class="code" value="${c.taxId}"/><span class="hint">Se almacena con Always Encrypted</span></div>
-          <div class="form-group"><label>Régimen fiscal</label><select><option>${c.regime}</option><option>Monotributo</option><option>Exento</option></select></div>
-          <div class="form-group"><label>País sede <span class="req">*</span></label><select><option>🇦🇷 Argentina</option><option>🇧🇷 Brasil</option><option>🇲🇽 México</option></select></div>
-          <div class="form-group"><label>Domicilio fiscal</label><input type="text" value="Av. Corrientes 1234, CABA"/></div>
+        <h3>Tenant resuelto automáticamente</h3>
+        <p class="muted" style="margin-top:0">No hay selección de cliente. Kiboo ERP envía el token con el tenant y la empresa activos.</p>
+        <table class="table">
+          <tbody>
+            <tr><td>ERP fuente</td><td><strong>${onboardingState.erpPayload.erp}</strong></td></tr>
+            <tr><td>Tenant</td><td><span class="kbd">${token.tenantId}</span></td></tr>
+            <tr><td>Company ID</td><td><span class="kbd">${token.companyId}</span></td></tr>
+            <tr><td>Entorno</td><td>${token.environment}</td></tr>
+            <tr><td>Scopes</td><td>${token.scopes.map(scope => `<span class="bus-tag synced">${scope}</span>`).join(' ')}</td></tr>
+          </tbody>
+        </table>
+        <div class="alert info" style="margin-top:14px">
+          <div class="ico">🔐</div>
+          <div class="body">
+            <div class="t">El contexto viene cerrado desde el ERP</div>
+            <div class="d">Conta sólo valida el token y usa ese contexto para inicializar la configuración contable del tenant correcto.</div>
+          </div>
         </div>
       </div>
 
       <div class="panel">
-        <h3>Configuración contable inicial</h3>
+        <h3>Datos del cliente a verificar</h3>
+        <p class="muted" style="margin-top:0">En onboarding sólo se revisan los datos resueltos por Kiboo ERP. Si algo no coincide, se corrige en el ERP.</p>
         <div class="form-grid full">
-          <div class="form-group"><label>Moneda funcional <span class="req">*</span></label><select><option>ARS · Peso Argentino</option><option>USD</option><option>BRL</option></select><span class="hint">Moneda en la que se llevan los EECC</span></div>
-          <div class="form-group"><label>Inicio del ejercicio fiscal</label><select><option>1 de enero (anual)</option><option>1 de julio</option><option>Personalizado</option></select></div>
-          <div class="form-group"><label>Granularidad de períodos</label><select><option>Mensual (12)</option><option>Trimestral (4)</option><option>Cuatrimestral (3)</option></select></div>
-          <div class="form-group"><label>Plantilla de plan de cuentas sugerida</label><select><option>🇦🇷 Argentina · PyME (RT 9) — recomendada</option><option>🇦🇷 Argentina · Corporativa (NIIF)</option><option>Vacío (cargar desde cero)</option></select></div>
-          <div class="form-group"><label>Proveedor de tipos de cambio</label><select><option>BCRA (oficial)</option><option>Manual</option><option>fixer.io</option></select></div>
-          <div class="form-group"><label>Doble aprobación en cierres</label><select><option>Activada (recomendada)</option><option>Desactivada</option></select></div>
+          <div class="form-group"><label>Razón social</label><input type="text" value="${c.legalName}"/></div>
+          <div class="form-group"><label>Tax ID (CUIT)</label><input type="text" class="code" value="${c.taxId}"/></div>
+          <div class="form-group"><label>País</label><select><option>🇦🇷 Argentina</option></select></div>
+          <div class="form-group"><label>Régimen fiscal</label><select><option>${c.regime}</option></select></div>
+          <div class="form-group"><label>Moneda funcional</label><select><option>ARS · Peso Argentino</option><option>USD</option></select></div>
+          <div class="form-group"><label>Inicio de ejercicio</label><select><option>1 de enero</option><option>1 de julio</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px; background: var(--bg-2)">
+      <h3>Payload de instalación recibido</h3>
+      <p class="muted" style="font-size:12px">Kiboo ERP resuelve el tenant y manda el contexto operativo que Conta usa para inicializar el módulo.</p>
+      <pre class="code">POST /api/v1/install
+Source: ${onboardingState.erpPayload.erp}
+Authorization: Bearer &lt;jwt with tenant/company&gt;
+{
+  "tenant": "${token.tenantId}",
+  "companyId": "${token.companyId}",
+  "company": { "legalName": "${c.legalName}", ... },
+  "branches": [ ${onboardingState.erpPayload.branches.length} items ],
+  "businessUnits": [ ${onboardingState.erpPayload.businessUnits.length} items ],
+  "currencies": [ ${onboardingState.erpPayload.currencies.length} items ],
+  "eventsCatalog": [ ${onboardingState.erpPayload.eventsCatalog.length} triggers detectados ]
+}</pre>
+    </div>
+
+    <div class="alert info" style="margin-top:20px">
+        <div class="ico">💡</div>
+        <div class="body">
+          <div class="t">Alcance real del onboarding</div>
+          <div class="d">Acá no se decide el cliente ni la identidad. El foco es validar datos, definir el plan de cuentas y dejar activas las posting rules para empezar a contabilizar eventos de Kiboo ERP.</div>
+        </div>
+      </div>
+    `;
+}
+
+function getFlowDiagram() {
+  return `
+JWT de Kiboo ERP                         Conta
+┌────────────────────┐                   ┌───────────────────────────┐
+│ tenant_id          │ ────────────────► │ Resuelve tenant activo    │
+│ company_id         │ ────────────────► │ Valida scopes             │
+│ scopes             │ ────────────────► │ Inicializa módulo         │
+└────────────────────┘                   │                           │
+Kiboo ERP                               │ Plan de cuentas LOCAL     │
+┌────────────────────┐  consultas live   │ Posting Rules LOCAL       │
+│ Empresa            │ ◄───────────────► │ Reportes sobre asientos   │
+│ Sucursales         │ ◄───────────────► │                           │
+│ Unidades negocio   │ ◄───────────────► │                           │
+│ Roles / usuarios   │ ◄─ gestionados ─► │ delegados al ERP          │
+└────────────────────┘                   └───────────────────────────┘`;
+}
+
+// ── PASO 2: Organización federada
+function renderStep2Org() {
+  const p = onboardingState.erpPayload;
+  return `
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Qué consume Conta en modo federado</h3>
+        <p class="muted" style="margin-top:0">La estructura organizacional no se importa ni se copia. Se consulta en runtime desde Kiboo ERP vía gateway.</p>
+        <div class="health-row"><div class="name">🏢 Empresa</div><div class="meta"><span class="tag ok">federado</span></div></div>
+        <div class="health-row"><div class="name">🏪 Sucursales</div><div class="meta"><span class="tag ok">federado</span></div></div>
+        <div class="health-row"><div class="name">📊 Unidades de negocio</div><div class="meta"><span class="tag ok">federado</span></div></div>
+        <div class="health-row"><div class="name">💱 Monedas</div><div class="meta"><span class="tag ok">federado</span></div></div>
+        <div class="health-row"><div class="name">👤 Usuarios y permisos</div><div class="meta"><span class="tag muted">gestionado en Kiboo ERP</span></div></div>
+        <div class="health-row"><div class="name">🔐 Roles</div><div class="meta"><span class="tag muted">menú Roles/Usuarios del ERP</span></div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Datos disponibles desde el ERP</h3>
+        <table class="table">
+          <thead><tr><th>Entidad</th><th>Cantidad</th><th>Uso en Conta</th></tr></thead>
+          <tbody>
+            <tr><td>Sucursales</td><td>${p.branches.length}</td><td>Filtros, segmentación y reporting</td></tr>
+            <tr><td>Unidades de negocio</td><td>${p.businessUnits.length}</td><td>Segmentación analítica</td></tr>
+            <tr><td>Monedas</td><td>${p.currencies.length}</td><td>Catálogo de operación</td></tr>
+            <tr><td>Usuarios</td><td>${p.users.length}</td><td>Referencia visual, sin alta local</td></tr>
+          </tbody>
+        </table>
+        <div class="alert info" style="margin-top:14px">
+          <div class="ico">🔗</div>
+          <div class="body">
+            <div class="t">Identidad fuera del onboarding</div>
+            <div class="d">Los usuarios, roles y permisos se administran en el menú de Roles y Usuarios de Kiboo ERP. Conta no duplica ni importa ese modelo.</div>
+          </div>
         </div>
       </div>
     </div>
 
     <div class="panel" style="margin-top: 20px">
-      <h3>🔌 Cómo van a coexistir Conta y el ERP</h3>
+      <h3>🔌 Cómo coexisten Kiboo ERP y Conta</h3>
       <div class="flow-diagram">${getFlowDiagram()}</div>
     </div>`;
 }
 
-function getFlowDiagram() {
-  const m = onboardingState.mode;
-  if (m === 'greenfield') return `
-ERP: <none>                             Conta (fuente de verdad)
-                                          ┌──────────────┐
-                                          │ Empresa      │
-                                          │ BU/Sucursal  │
-                                          │ Usuarios     │
-                                          │ Plan cuentas │
-                                          │ Asientos     │
-                                          └──────────────┘`;
-  if (m === 'bootstrap') return `
-ERP                                       Conta
-┌─────────────────┐  install (one-shot)   ┌──────────────────────┐
-│ Empresa         │ ─────────────────────►│ Empresa (copia)      │
-│ BU/Sucursal     │ ─────────────────────►│ BU/Sucursal (copia)  │
-│ Usuarios/Roles  │ ─────────────────────►│ Usuarios (copia)     │
-└─────────────────┘                       │ Plan cuentas (LOCAL) │
-                                          │ Posting Rules (LOCAL)│
-                                          │ Asientos (LOCAL)     │
-ERP eventos de negocio:                   └──────────────────────┘
-  invoice.created  ─────────────────────► postea via Posting Rule
-  payment.received ─────────────────────► postea via Posting Rule
-  payroll.run      ─────────────────────► postea via Posting Rule
-
-Sync periódico opcional (si datos cambian en ERP):
-  ERP webhook 'branch.updated' ─────────► Conta actualiza copia`;
-
-  if (m === 'federated') return `
-ERP (fuente de verdad)                    Conta
-┌─────────────────┐                       ┌──────────────────────┐
-│ Empresa         │ ◄─── consultas ──────│ FederatedAdapter     │
-│ BU/Sucursal     │ ◄─── runtime ────────│ (cache 5min)         │
-│ Usuarios/Roles  │ ◄─── OIDC SSO ───────│ JWT compartido       │
-└─────────────────┘                       │                      │
-                                          │ Plan cuentas (LOCAL) │
-                                          │ Posting Rules (LOCAL)│
-ERP eventos de negocio:                   │ Asientos (LOCAL)     │
-  invoice.created  ─────────────────────► postea via Posting Rule
-  payment.received ─────────────────────► (Conta NO duplica nada)`;
-  return 'Seleccioná un modo en el paso 1.';
-}
-
-// ── PASO 3: Estructura organizacional + adapter por entidad
-function renderStep3Org() {
-  const p = onboardingState.erpPayload;
-  const adapterRow = (key, icon, label, desc, available='all') => `
-    <div class="adapter-row">
-      <div class="entity"><span class="icon">${icon}</span>${label}</div>
-      <div class="desc">${desc}</div>
-      <select onchange="setAdapter('${key}', this.value)" value="${onboardingState.adapters[key]}">
-        ${available==='no-fed' ? '' : `<option value="federated" ${onboardingState.adapters[key]==='federated'?'selected':''}>🔗 Federado (consume del ERP)</option>`}
-        <option value="hybrid"     ${onboardingState.adapters[key]==='hybrid'?'selected':''}>🔄 Híbrido (copia + sync)</option>
-        <option value="local"      ${onboardingState.adapters[key]==='local'?'selected':''}>💾 Local (sólo Conta)</option>
-      </select>
-    </div>`;
-
-  return `
-    <div class="panel">
-      <h3>Adapter por entidad</h3>
-      <p class="muted" style="margin-top:0">Definí cómo Conta va a manejar cada tipo de dato. Lo contable (asientos, plan de cuentas, periodos) siempre vive en Conta.</p>
-
-      ${adapterRow('company', '🏢', 'Empresa', 'Datos legales: razón social, CUIT, domicilio')}
-      ${adapterRow('branches', '🏪', 'Sucursales', 'Casas / canales / puntos de venta', 'all')}
-      ${adapterRow('businessUnits', '📊', 'Unidades de negocio', 'Líneas de negocio (Retail, Mayorista, Online)', 'all')}
-      ${adapterRow('currencies', '💱', 'Monedas', 'Catálogo y tipos de cambio')}
-      ${adapterRow('users', '👤', 'Usuarios', 'Cuentas de acceso al sistema')}
-      ${adapterRow('roles', '🔐', 'Roles y permisos', 'Mapeo de roles ERP → roles Conta')}
-      ${adapterRow('customers', '👥', 'Clientes (CxC)', 'Maestro de clientes para conciliación')}
-      ${adapterRow('suppliers', '🚚', 'Proveedores (CxP)', 'Maestro de proveedores')}
-
-      <div class="alert info" style="margin-top:14px">
-        <div class="ico">💡</div>
-        <div class="body">
-          <div class="t">Tip: combinaciones más comunes</div>
-          <div class="d">Empresa <em>local</em> + Sucursales/BU <em>híbrido</em> + Usuarios/Roles <em>federado</em>. Te permite editar la estructura organizacional desde Conta sin perder identidad unificada.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-top:20px">
-      <div class="panel">
-        <h3>Sucursales recibidas del ERP <span class="muted" style="font-weight:400; font-size:13px">(${p.branches.length})</span></h3>
-        <p class="muted" style="font-size:12px; margin-top:0">Modo: <strong>${onboardingState.adapters.branches}</strong></p>
-        <table class="table">
-          <thead><tr><th></th><th>Código ERP</th><th>Nombre</th><th>Ciudad</th><th>Importar</th></tr></thead>
-          <tbody>
-            ${p.branches.map(b=>`<tr>
-              <td>🏪</td>
-              <td><span class="kbd">${b.code}</span></td>
-              <td>${b.name}</td>
-              <td class="muted">${b.city}</td>
-              <td><label class="toggle" style="padding:4px 8px"><input type="checkbox" checked/></label></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="panel">
-        <h3>Unidades de negocio <span class="muted" style="font-weight:400; font-size:13px">(${p.businessUnits.length})</span></h3>
-        <p class="muted" style="font-size:12px; margin-top:0">Modo: <strong>${onboardingState.adapters.businessUnits}</strong></p>
-        <table class="table">
-          <thead><tr><th></th><th>Código ERP</th><th>Nombre</th><th>Importar</th></tr></thead>
-          <tbody>
-            ${p.businessUnits.map(b=>`<tr>
-              <td>📊</td>
-              <td><span class="kbd">${b.code}</span></td>
-              <td>${b.name}</td>
-              <td><label class="toggle" style="padding:4px 8px"><input type="checkbox" checked/></label></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel" style="margin-top:20px">
-      <h3>Monedas <span class="muted" style="font-weight:400; font-size:13px">(${p.currencies.length})</span></h3>
-      <table class="table">
-        <thead><tr><th>Código</th><th>Nombre</th><th>Funcional</th><th>Tipo de cambio</th><th>Importar</th></tr></thead>
-        <tbody>
-          ${p.currencies.map(c=>`<tr>
-            <td><span class="kbd">${c.code}</span></td>
-            <td>${c.name}</td>
-            <td>${c.isFunctional?'<span class="tag ok">funcional</span>':'<span class="tag muted">extranjera</span>'}</td>
-            <td class="muted">BCRA · sync diario</td>
-            <td><label class="toggle" style="padding:4px 8px"><input type="checkbox" checked/></label></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-// ── PASO 4: Plan de cuentas
-function renderStep4COA() {
+// ── PASO 3: Plan de cuentas
+function renderStep3COA() {
   return `
     <div class="grid-2">
       <div class="panel">
-        <h3>Plantilla base</h3>
-        <p class="muted" style="margin-top:0">El ERP no envía plan de cuentas (es contable, no operativo). Elegí una plantilla que se adapte al cliente.</p>
+        <h3>Crear o elegir plan de cuentas</h3>
+        <p class="muted" style="margin-top:0">El plan de cuentas es local a Conta. Podés crearlo desde cero o elegir una base por país, rubro o categoría.</p>
         <div style="display:flex; flex-direction:column; gap:8px">
           <label class="toggle"><input type="radio" name="coa" checked/>
-            <div class="info"><div class="t">🇦🇷 Argentina · PyME (RT 9)</div><div class="d">82 cuentas · IVA 21% · Mono y RI</div></div></label>
+            <div class="info"><div class="t">🇦🇷 Por país · Argentina PyME (RT 9)</div><div class="d">82 cuentas · estructura estándar fiscal y financiera</div></div></label>
           <label class="toggle"><input type="radio" name="coa"/>
-            <div class="info"><div class="t">🇦🇷 Argentina · Corporativa (NIIF/CONTAB)</div><div class="d">220 cuentas · multi-moneda · ORI</div></div></label>
+            <div class="info"><div class="t">🏭 Por rubro · Distribución y retail</div><div class="d">Ventas, stock, canales, cobranzas y gastos comerciales</div></div></label>
           <label class="toggle"><input type="radio" name="coa"/>
-            <div class="info"><div class="t">🇧🇷 Brasil · Lucro Real (SPED)</div><div class="d">ICMS / PIS / COFINS · IRPJ / CSLL</div></div></label>
+            <div class="info"><div class="t">🧩 Por categoría · Financiero / gerencial</div><div class="d">Base corta para construir el árbol por categorías propias</div></div></label>
           <label class="toggle"><input type="radio" name="coa"/>
-            <div class="info"><div class="t">🇲🇽 México · CFDI / SAT</div><div class="d">Catálogo SAT · ISR/IVA</div></div></label>
-          <label class="toggle"><input type="radio" name="coa"/>
-            <div class="info"><div class="t">⚪ Vacío</div><div class="d">Cargar desde cero o importar CSV</div></div></label>
+            <div class="info"><div class="t">⚪ Desde cero</div><div class="d">Árbol vacío para construir manualmente</div></div></label>
         </div>
         <button class="btn" style="margin-top:12px">📤 Importar desde CSV / Excel</button>
       </div>
 
       <div class="panel">
-        <h3>Mapeo automático con datos del ERP</h3>
-        <p class="muted" style="margin-top:0">Conta puede sugerir asignaciones inferidas del catálogo del ERP.</p>
+        <h3>Sugerencias desde Kiboo ERP</h3>
+        <p class="muted" style="margin-top:0">Conta no toma el plan desde el ERP, pero sí usa categorías y referencias operativas para sugerir cuentas y subcuentas.</p>
         <table class="table">
           <thead><tr><th>Concepto ERP</th><th>Cuenta sugerida</th><th>Confianza</th></tr></thead>
           <tbody>
@@ -3345,12 +3193,12 @@ function renderStep4COA() {
         <div class="node l1"><span>📁</span><span class="kbd">4</span><span>INGRESOS</span></div>
         <div class="node l1"><span>📁</span><span class="kbd">5</span><span>EGRESOS</span></div>
       </div>
-      <p class="muted" style="font-size:12px; margin-top:10px">82 cuentas serán creadas · 6 mapeadas desde ERP · podrás editarlas en cualquier momento.</p>
+      <p class="muted" style="font-size:12px; margin-top:10px">82 cuentas serán creadas · 6 sugerencias derivadas del ERP · podrás editar el árbol en cualquier momento.</p>
     </div>`;
 }
 
-// ── PASO 5: Posting Rules
-function renderStep5Rules() {
+// ── PASO 4: Posting Rules
+function renderStep4Rules() {
   const p = onboardingState.erpPayload;
   const healthRows = [
     { name:'erp.invoice.created', meta:'10/10 dry-runs balanceados', status:'ok' },
@@ -3402,17 +3250,17 @@ function renderStep5Rules() {
       </div>
 
       <div class="panel">
-        <h3>🔁 Backfill histórico</h3>
-        <p class="muted" style="margin-top:0">Si el ERP tiene operaciones anteriores, podés contabilizarlas retroactivamente.</p>
+        <h3>🔁 Alcance inicial</h3>
+        <p class="muted" style="margin-top:0">La instalación deja a Conta lista para procesar eventos en vivo desde Kiboo ERP. El backfill histórico queda como decisión posterior.</p>
         <div class="form-grid full">
           <div class="form-group">
-            <label>Período a importar</label>
-            <select><option>Sólo desde hoy en adelante (recomendado)</option><option>Últimos 3 meses</option><option>Ejercicio en curso</option><option>Todo el histórico</option></select>
+            <label>Ventana inicial</label>
+            <select><option>Sólo desde hoy en adelante (recomendado)</option><option>Últimos 3 meses</option><option>Ejercicio en curso</option></select>
           </div>
           <div class="form-group">
-            <label>Modo de procesamiento</label>
-            <select><option>Asíncrono (background)</option><option>Síncrono (espera completar)</option></select>
-            <span class="hint">Backfill de 1 año = ~14k asientos · ~3 minutos</span>
+            <label>Modo de activación</label>
+            <select><option>Procesar sólo eventos nuevos</option><option>Activar con replay controlado</option></select>
+            <span class="hint">La recomendación para el alta es empezar a consumir en vivo y dejar el histórico fuera del onboarding.</span>
           </div>
           <div class="form-group">
             <label>Si hay errores</label>
@@ -3423,92 +3271,8 @@ function renderStep5Rules() {
     </div>`;
 }
 
-// ── PASO 6: Identidad y permisos
-function renderStep6Identity() {
-  const p = onboardingState.erpPayload;
-  const fed = onboardingState.adapters.users === 'federated';
-  return `
-    <div class="panel">
-      <h3>Estrategia de identidad</h3>
-      <div class="mode-grid">
-        <div class="mode-card ${fed?'selected':''}" onclick="setAdapter('users','federated')">
-          <div class="mode-icon">🔗</div>
-          <h3>Federada (SSO con ERP)</h3>
-          <ul>
-            <li>Mismo login que el ERP</li>
-            <li>OIDC / SAML</li>
-            <li>Roles ERP → roles Conta vía mapping</li>
-            <li>Cero usuarios duplicados</li>
-          </ul>
-        </div>
-        <div class="mode-card ${onboardingState.adapters.users==='hybrid'?'selected':''}" onclick="setAdapter('users','hybrid')">
-          <div class="mode-icon">🔄</div>
-          <h3>Híbrida</h3>
-          <ul>
-            <li>Importa usuarios del ERP</li>
-            <li>Permite agregar usuarios sólo de Conta</li>
-            <li>Sync de altas/bajas via webhook</li>
-          </ul>
-        </div>
-        <div class="mode-card ${onboardingState.adapters.users==='local'?'selected':''}" onclick="setAdapter('users','local')">
-          <div class="mode-icon">💾</div>
-          <h3>Local</h3>
-          <ul>
-            <li>Usuarios sólo en Conta</li>
-            <li>Login independiente</li>
-            <li>Útil si Conta tiene acceso para auditores externos</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    ${fed ? `
-    <div class="panel" style="margin-top:20px">
-      <h3>Configuración OIDC del ERP</h3>
-      <div class="form-grid">
-        <div class="form-group"><label>Issuer URL</label><input type="text" value="https://auth.acme-erp.com/realms/acme"/></div>
-        <div class="form-group"><label>Client ID</label><input type="text" class="code" value="conta-prod"/></div>
-        <div class="form-group"><label>Client Secret</label><input type="text" class="code" value="●●●●●●●●●●●●"/></div>
-        <div class="form-group"><label>Scopes</label><input type="text" value="openid profile email roles"/></div>
-        <div class="form-group"><label>Claim de roles</label><input type="text" class="code" value="resource_access.acme.roles"/></div>
-        <div class="form-group"><label>Claim de tenant</label><input type="text" class="code" value="tenant_id"/></div>
-      </div>
-      <button class="btn" style="margin-top:12px">Probar conexión OIDC</button>
-    </div>` : ''}
-
-    <div class="panel" style="margin-top:20px">
-      <h3>Mapeo de roles ERP → Conta</h3>
-      <table class="table">
-        <thead><tr><th>Rol ERP</th><th>Rol Conta</th><th>Permisos Conta</th></tr></thead>
-        <tbody>
-          <tr><td><span class="kbd">erp.cfo</span></td><td><select><option>Admin contable</option></select></td><td class="muted">Todos</td></tr>
-          <tr><td><span class="kbd">erp.accountant</span></td><td><select><option>Aprobador</option><option>Admin contable</option></select></td><td class="muted">Read + post + close</td></tr>
-          <tr><td><span class="kbd">erp.operator</span></td><td><select><option>Operador</option></select></td><td class="muted">Read + post (sin close)</td></tr>
-          <tr><td><span class="kbd">erp.viewer</span></td><td><select><option>Auditor</option></select></td><td class="muted">Read-only</td></tr>
-          <tr><td><span class="kbd">erp.support</span></td><td><select><option>— Sin acceso a Conta —</option></select></td><td class="muted">N/A</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="panel" style="margin-top:20px">
-      <h3>Usuarios iniciales (${p.users.length})</h3>
-      <table class="table">
-        <thead><tr><th>Email</th><th>Nombre</th><th>Rol Conta</th><th>2FA</th><th>Acceso</th></tr></thead>
-        <tbody>
-          ${p.users.map(u=>`<tr>
-            <td>${u.email}</td><td>${u.name}</td>
-            <td>${u.role==='admin'?'<span class="tag warn">Admin contable</span>':u.role==='aprobador'?'<span class="tag warn">Aprobador</span>':u.role==='auditor'?'<span class="tag muted">Auditor</span>':'<span class="tag muted">Operador</span>'}</td>
-            <td>${u.role==='admin'||u.role==='aprobador'?'<span class="tag ok">obligatorio</span>':'<span class="tag muted">opcional</span>'}</td>
-            <td><label class="toggle" style="padding:4px 8px"><input type="checkbox" checked/></label></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-// ── PASO 7: Verificación e instalación
-function renderStep7Verify() {
-  const m = onboardingState.mode;
+// ── PASO 5: Verificación e instalación
+function renderStep5Verify() {
   const a = onboardingState.adapters;
   const p = onboardingState.erpPayload;
   return `
@@ -3516,7 +3280,8 @@ function renderStep7Verify() {
       <div class="panel">
         <h3>📋 Resumen de la instalación</h3>
         <table class="table">
-          <tr><td>Modo</td><td><strong>${m==='greenfield'?'🌱 Greenfield':m==='bootstrap'?'📦 Bootstrap desde ERP':'🔗 Federado'}</strong></td></tr>
+          <tr><td>Modelo</td><td><strong>🔗 Federado Kiboo-first</strong></td></tr>
+          <tr><td>Tenant</td><td><span class="kbd">${p.tokenContext.tenantId}</span></td></tr>
           <tr><td>Empresa</td><td>${p.company.legalName}</td></tr>
           <tr><td>País / régimen</td><td>${p.company.country} · ${p.company.regime}</td></tr>
           <tr><td>Moneda funcional</td><td>ARS</td></tr>
@@ -3525,22 +3290,23 @@ function renderStep7Verify() {
           <tr><td>Sucursales</td><td>${p.branches.length} · adapter: <strong>${a.branches}</strong></td></tr>
           <tr><td>Unidades de negocio</td><td>${p.businessUnits.length} · adapter: <strong>${a.businessUnits}</strong></td></tr>
           <tr><td>Monedas</td><td>${p.currencies.length}</td></tr>
-          <tr><td>Usuarios</td><td>${p.users.length} · adapter: <strong>${a.users}</strong></td></tr>
+          <tr><td>Usuarios y permisos</td><td>Delegados a Kiboo ERP</td></tr>
           <tr><td>Posting Rules</td><td>${p.eventsCatalog.length} reglas creadas</td></tr>
-          <tr><td>Backfill histórico</td><td>desactivado</td></tr>
+          <tr><td>Backfill histórico</td><td>fuera del onboarding</td></tr>
         </table>
       </div>
 
       <div class="panel">
         <h3>✅ Checks pre-instalación</h3>
         <ul class="checklist">
-          <li>✅ Datos legales completos</li>
+          <li>✅ Token del ERP válido con tenant y company resueltos</li>
+          <li>✅ Datos legales verificados contra Kiboo ERP</li>
+          <li>✅ Organización marcada como 100% federada</li>
           <li>✅ Plan de cuentas con balance teórico OK</li>
-          <li>✅ Plantilla de país aplicada</li>
+          <li>✅ Plantilla base aplicada</li>
           <li>✅ ${p.eventsCatalog.length} posting rules con dry-run exitoso</li>
-          <li>✅ Adapters configurados sin conflictos</li>
+          <li>✅ Gateway configurado sin copias locales de maestros</li>
           <li>✅ Conexión con ERP validada (latencia 42 ms)</li>
-          <li>✅ OIDC issuer responde correctamente</li>
           <li>⚠️ 1 evento con cuenta sin mapeo (revisar: erp.refund.partial)</li>
         </ul>
         <div class="alert info">
@@ -3555,7 +3321,7 @@ function renderStep7Verify() {
 
     <div class="panel" style="margin-top:20px">
       <h3>🚀 Ejecutar instalación</h3>
-      <p class="muted" style="margin-top:0">Esto va a crear el tenant en Conta y dejar el sistema listo para recibir eventos del ERP. La operación es atómica: si algo falla, se revierte todo.</p>
+      <p class="muted" style="margin-top:0">Esto crea la configuración contable local del tenant y deja a Conta lista para consumir organización y seguridad desde Kiboo ERP. La operación es atómica: si algo falla, se revierte todo.</p>
 
       <div class="progress" style="margin-bottom: 12px">
         <div class="progress-bar"><div class="fill" style="width: 0%"></div></div>
@@ -3563,16 +3329,14 @@ function renderStep7Verify() {
       </div>
 
       <div style="display:flex; flex-direction:column; gap:8px">
-        <div class="health-row"><div class="name">1. Crear tenant + company</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">2. Aplicar plantilla de plan de cuentas (82)</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">3. Inicializar fiscal year + 12 períodos</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">4. Importar sucursales (${p.branches.length})</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">5. Importar BU (${p.businessUnits.length})</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">6. Importar monedas (${p.currencies.length}) + sync FX</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">7. Crear roles y mapear usuarios (${p.users.length})</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">8. Activar Posting Rules (${p.eventsCatalog.length})</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">9. Suscribir webhooks bidireccionales con ERP</div><div class="meta muted">esperando</div></div>
-        <div class="health-row"><div class="name">10. Smoke test end-to-end</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">1. Validar JWT y resolver tenant/company</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">2. Crear configuración contable local del tenant</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">3. Aplicar plantilla de plan de cuentas (82)</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">4. Inicializar ejercicio fiscal + 12 períodos</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">5. Activar consumo federado de sucursales/BU/monedas</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">6. Delegar roles y usuarios al menú del ERP</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">7. Activar Posting Rules (${p.eventsCatalog.length})</div><div class="meta muted">esperando</div></div>
+        <div class="health-row"><div class="name">8. Validar gateway federado + smoke test</div><div class="meta muted">esperando</div></div>
       </div>
 
       <div style="margin-top: 16px; display:flex; gap:8px">
@@ -3586,8 +3350,8 @@ function renderStep7Verify() {
       <h3>🔮 Después de la instalación</h3>
       <div class="grid-3" style="margin-top:0">
         <div class="rule-line"><strong>Eventos en vivo</strong><div class="muted" style="font-size:12px">Los eventos del ERP se procesan en tiempo real vía Service Bus. Idempotencia garantizada.</div></div>
-        <div class="rule-line"><strong>Sync periódico</strong><div class="muted" style="font-size:12px">Si elegiste híbrido, datos como sucursales se sincronizan cada 1h o por webhook.</div></div>
-        <div class="rule-line"><strong>Soporte 24/7</strong><div class="muted" style="font-size:12px">Cualquier divergencia se detecta y se notifica al admin contable.</div></div>
+        <div class="rule-line"><strong>Organización federada</strong><div class="muted" style="font-size:12px">Sucursales, BU, monedas y seguridad se leen desde Kiboo ERP sin copias locales.</div></div>
+        <div class="rule-line"><strong>Soporte 24/7</strong><div class="muted" style="font-size:12px">Cualquier divergencia entre gateway y ERP se detecta y se notifica al admin contable.</div></div>
       </div>
     </div>`;
 }
@@ -3621,30 +3385,30 @@ function renderGateway() {
     <div class="page-header">
       <div>
         <h1 class="page-title">🔌 ERP Gateway</h1>
-        <div class="page-sub">Anti-Corruption Layer · microservicio que aísla a Conta de la API del ERP</div>
+        <div class="page-sub">ACL federada · Kiboo ERP resuelve tenant, organización y seguridad; Conta consume contratos propios</div>
       </div>
       <div class="toolbar">
-        <button class="btn">🔄 Forzar resync</button>
+        <button class="btn">🔄 Refrescar cache federada</button>
         <button class="btn">📊 Métricas en Datadog</button>
         <button class="btn btn-primary">⚙ Configurar</button>
       </div>
     </div>
 
     <div class="cards">
-      <div class="card"><div class="label">Estado</div><div class="value" style="color:var(--ok)">● Healthy</div><div class="delta">3 instancias activas</div></div>
+      <div class="card"><div class="label">Estado</div><div class="value" style="color:var(--ok)">● Healthy</div><div class="delta">tenant desde JWT · 3 instancias activas</div></div>
       <div class="card"><div class="label">Latencia p95</div><div class="value">42 <span style="font-size:14px">ms</span></div><div class="delta up">−8 ms vs ayer</div></div>
       <div class="card"><div class="label">Cache hit rate</div><div class="value">94.2%</div><div class="delta up">▲ 1.3 pp</div></div>
-      <div class="card"><div class="label">Eventos / min</div><div class="value">${fmtN(127)}</div><div class="delta">last hour</div></div>
+      <div class="card"><div class="label">Entidades federadas</div><div class="value">6</div><div class="delta">empresa, sucursales, BU, monedas, clientes, proveedores</div></div>
     </div>
 
     <div class="health-overview" style="margin-top:16px">
       <div class="health-score">
         <div class="health-score-value">96%</div>
-        <div class="health-score-label">Gateway health</div>
+        <div class="health-score-label">Federation health</div>
       </div>
       <div style="flex:1">
         <div class="progress-bar" style="height:10px"><div class="fill" style="width:96%"></div></div>
-        <div class="muted" style="font-size:12px; margin-top:6px">Último check global: hace 40s · 1 endpoint degradado (Items)</div>
+        <div class="muted" style="font-size:12px; margin-top:6px">Último check global: hace 40s · tenant resuelto desde token · 1 endpoint degradado</div>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
         <span class="tag ok">7 OK</span>
@@ -3660,23 +3424,24 @@ function renderGateway() {
 │  Conta.Api / Functions / Web        │
 │  (sólo conoce DTOs Conta-shaped)    │
 └─────────────────┬───────────────────┘
-                  │ HTTP/gRPC interno
+                  │ JWT + HTTP/gRPC interno
                   ▼
 ┌─────────────────────────────────────┐
 │  Conta.ErpGateway        v2.4.1     │
 │  ─────────────────────────────────  │
-│  ▸ AdapterRegistry (multi-ERP)      │
+│  ▸ TenantResolver (JWT claims)      │
+│  ▸ AdapterRegistry (Kiboo-first)    │
 │  ▸ Cache (Redis cluster)            │
 │  ▸ CircuitBreaker (Polly)           │
 │  ▸ EventTranslator                  │
-│  ▸ AuthClient (OIDC)                │
+│  ▸ ScopeValidator                   │
 │  ▸ TelemetryEnricher                │
 └──────┬───────────┬─────────┬────────┘
        │           │         │
-   ┌───▼───┐   ┌───▼──┐   ┌──▼────────┐
-   │SAP B1 │   │ Odoo │   │ ERP propio│
-   │adapter│   │adapter│  │  adapter  │
-   └───────┘   └──────┘   └───────────┘</pre>
+   ┌───▼──────┐ ┌──▼────────┐ ┌──▼────────────┐
+   │ Kiboo ERP│ │ Cache fed.│ │ Conta contracts│
+   │ adapter  │ │  Redis    │ │ normalizados   │
+   └──────────┘ └───────────┘ └───────────────┘</pre>
       </div>
 
       <div class="panel">
@@ -3685,28 +3450,10 @@ function renderGateway() {
           <thead><tr><th>ERP</th><th>Versión</th><th>Tenants</th><th>Estado</th></tr></thead>
           <tbody>
             <tr>
-              <td><strong>SAP Business One</strong></td>
-              <td><span class="kbd">v10 SP02</span></td>
+              <td><strong>Kiboo ERP</strong></td>
+              <td><span class="kbd">v3.2 federated</span></td>
               <td>1 (ACME S.A.)</td>
               <td><span class="tag ok">activo</span></td>
-            </tr>
-            <tr>
-              <td><strong>Odoo</strong></td>
-              <td><span class="kbd">v17.0</span></td>
-              <td>0</td>
-              <td><span class="tag muted">disponible</span></td>
-            </tr>
-            <tr>
-              <td><strong>Microsoft Dynamics 365</strong></td>
-              <td><span class="kbd">2024 wave 1</span></td>
-              <td>0</td>
-              <td><span class="tag muted">disponible</span></td>
-            </tr>
-            <tr>
-              <td><strong>Oracle NetSuite</strong></td>
-              <td>—</td>
-              <td>0</td>
-              <td><span class="tag warn">en desarrollo</span></td>
             </tr>
             <tr>
               <td><strong>Custom REST adapter</strong></td>
@@ -3714,26 +3461,38 @@ function renderGateway() {
               <td>0</td>
               <td><span class="tag muted">disponible</span></td>
             </tr>
+            <tr>
+              <td><strong>Odoo</strong></td>
+              <td><span class="kbd">v17.0</span></td>
+              <td>0</td>
+              <td><span class="tag muted">roadmap</span></td>
+            </tr>
+            <tr>
+              <td><strong>Dynamics 365</strong></td>
+              <td>—</td>
+              <td>0</td>
+              <td><span class="tag warn">en desarrollo</span></td>
+            </tr>
           </tbody>
         </table>
-        <p class="muted" style="font-size:12px; margin-top:8px">Los adapters son plugins. Agregar uno nuevo no requiere modificar Conta.Core.</p>
+        <p class="muted" style="font-size:12px; margin-top:8px">El adapter activo del MVP es Kiboo ERP. Los demás quedan como extensibilidad futura sin cambiar Conta.Core.</p>
       </div>
     </div>
 
     <div class="grid-2" style="margin-top:20px">
       <div class="panel">
-        <h3>Salud de endpoints federados (ACME · SAP B1)</h3>
+        <h3>Salud de endpoints federados (ACME · Kiboo ERP)</h3>
         <table class="table">
           <thead><tr><th>Recurso</th><th>Adapter</th><th class="num">p95</th><th>Cache TTL</th><th>Hit rate</th><th>Estado</th></tr></thead>
           <tbody>
-            <tr><td>🏪 Branches</td><td>SAP·BusinessPartner+Branches</td><td class="num">28ms</td><td>15 min</td><td>97%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>📊 BusinessUnits</td><td>SAP·CostCenters</td><td class="num">31ms</td><td>15 min</td><td>96%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>👤 Users</td><td>SAP·Users</td><td class="num">52ms</td><td>5 min</td><td>89%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>🔐 Roles</td><td>SAP·UserGroups</td><td class="num">35ms</td><td>30 min</td><td>99%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>👥 Customers</td><td>SAP·BusinessPartners</td><td class="num">68ms</td><td>5 min</td><td>92%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>🚚 Suppliers</td><td>SAP·BusinessPartners</td><td class="num">61ms</td><td>5 min</td><td>91%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>💱 Currencies</td><td>SAP·Currencies</td><td class="num">12ms</td><td>1 h</td><td>99.8%</td><td><span class="tag ok">OK</span></td></tr>
-            <tr><td>📦 Items / Productos</td><td>SAP·Items</td><td class="num">88ms</td><td>10 min</td><td>83%</td><td><span class="tag warn">degraded</span></td></tr>
+            <tr><td>🏢 Tenant context</td><td>Kiboo·JWTClaims</td><td class="num">8ms</td><td>sin cache</td><td>100%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>🏪 Branches</td><td>Kiboo·Branches</td><td class="num">28ms</td><td>15 min</td><td>97%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>📊 BusinessUnits</td><td>Kiboo·BusinessUnits</td><td class="num">31ms</td><td>15 min</td><td>96%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>💱 Currencies</td><td>Kiboo·Currencies</td><td class="num">12ms</td><td>1 h</td><td>99.8%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>👥 Customers</td><td>Kiboo·Customers</td><td class="num">68ms</td><td>5 min</td><td>92%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>🚚 Suppliers</td><td>Kiboo·Suppliers</td><td class="num">61ms</td><td>5 min</td><td>91%</td><td><span class="tag ok">OK</span></td></tr>
+            <tr><td>🔐 Roles & permissions</td><td>Kiboo·RoleScopeLookup</td><td class="num">35ms</td><td>30 min</td><td>99%</td><td><span class="tag ok">delegado</span></td></tr>
+            <tr><td>📦 Categories / items</td><td>Kiboo·Catalog</td><td class="num">88ms</td><td>10 min</td><td>83%</td><td><span class="tag warn">degraded</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -3759,7 +3518,7 @@ function renderGateway() {
           </div>
           <div class="form-group">
             <label>Fallback en circuit open</label>
-            <select><option>Devolver desde cache (stale OK)</option><option>Devolver error 503</option></select>
+            <select><option>Devolver desde cache (stale OK)</option><option>Bloquear entidad y seguir con resto</option><option>Devolver error 503</option></select>
           </div>
           <div class="form-group">
             <label>Rate limit hacia el ERP</label>
@@ -3776,7 +3535,7 @@ function renderGateway() {
 
     <div class="grid-2" style="margin-top:20px">
       <div class="panel">
-        <h3>Eventos del ERP procesados</h3>
+        <h3>Eventos de Kiboo ERP procesados</h3>
         <table class="table">
           <thead><tr><th>Evento ERP</th><th>Conta event</th><th class="num">Hoy</th><th class="num">Errores</th></tr></thead>
           <tbody>
@@ -3793,7 +3552,7 @@ function renderGateway() {
 
       <div class="panel">
         <h3>Dead Letter Queue</h3>
-        <p class="muted" style="margin-top:0">Eventos que fallaron tras todos los reintentos. Requieren intervención manual.</p>
+        <p class="muted" style="margin-top:0">Eventos que fallaron tras todos los reintentos. La organización y seguridad no se corrigen acá: se corrigen en Kiboo ERP.</p>
         <table class="table">
           <thead><tr><th>Llegada</th><th>Evento</th><th>Razón</th><th></th></tr></thead>
           <tbody>
@@ -3816,36 +3575,36 @@ function renderGateway() {
 
     <div class="grid-2" style="margin-top:20px">
       <div class="panel">
-        <h3>Mapeo de campos · SAP BusinessPartner → Conta Customer</h3>
-        <p class="muted" style="margin-top:0; font-size:12px">El adapter SAP traduce el modelo del ERP al modelo de Conta antes de devolverlo.</p>
+        <h3>Mapeo de campos · Kiboo Customer → Conta Customer</h3>
+        <p class="muted" style="margin-top:0; font-size:12px">El adapter de Kiboo ERP traduce el modelo del ERP al modelo de Conta antes de devolverlo.</p>
         <table class="table">
           <thead><tr><th>Campo SAP</th><th></th><th>Campo Conta</th><th>Transformación</th></tr></thead>
           <tbody>
-            <tr><td><span class="kbd">CardCode</span></td><td>→</td><td><span class="kbd">externalId</span></td><td class="muted">passthrough</td></tr>
-            <tr><td><span class="kbd">CardName</span></td><td>→</td><td><span class="kbd">name</span></td><td class="muted">trim + uppercase</td></tr>
-            <tr><td><span class="kbd">FederalTaxID</span></td><td>→</td><td><span class="kbd">taxId</span></td><td class="muted">stripDashes</td></tr>
-            <tr><td><span class="kbd">Currency</span></td><td>→</td><td><span class="kbd">currencyCode</span></td><td class="muted">map ISO4217</td></tr>
-            <tr><td><span class="kbd">CreditLine</span></td><td>→</td><td><span class="kbd">creditLimit</span></td><td class="muted">decimal cast</td></tr>
-            <tr><td><span class="kbd">PayTermsGrpCode</span></td><td>→</td><td><span class="kbd">paymentTerms</span></td><td class="muted">lookup table</td></tr>
+            <tr><td><span class="kbd">customer.id</span></td><td>→</td><td><span class="kbd">externalId</span></td><td class="muted">passthrough</td></tr>
+            <tr><td><span class="kbd">customer.legal_name</span></td><td>→</td><td><span class="kbd">name</span></td><td class="muted">trim + uppercase</td></tr>
+            <tr><td><span class="kbd">customer.tax_id</span></td><td>→</td><td><span class="kbd">taxId</span></td><td class="muted">stripDashes</td></tr>
+            <tr><td><span class="kbd">customer.currency</span></td><td>→</td><td><span class="kbd">currencyCode</span></td><td class="muted">map ISO4217</td></tr>
+            <tr><td><span class="kbd">customer.credit_limit</span></td><td>→</td><td><span class="kbd">creditLimit</span></td><td class="muted">decimal cast</td></tr>
+            <tr><td><span class="kbd">customer.payment_terms</span></td><td>→</td><td><span class="kbd">paymentTerms</span></td><td class="muted">lookup table</td></tr>
             <tr><td>—</td><td></td><td><span class="kbd">aging</span></td><td class="muted">calculated by Conta</td></tr>
           </tbody>
         </table>
       </div>
 
       <div class="panel">
-        <h3>Configuración de conexión · ACME / SAP B1</h3>
+        <h3>Configuración de conexión · ACME / Kiboo ERP</h3>
         <div class="form-grid full">
           <div class="form-group">
-            <label>Service Layer URL</label>
-            <input type="text" value="https://sap-acme.local:50000/b1s/v1"/>
+            <label>Base URL</label>
+            <input type="text" value="https://api.kiboo.acme.com/v1"/>
           </div>
           <div class="form-group">
-            <label>Company DB</label>
-            <input type="text" class="code" value="SBO_ACME_PROD"/>
+            <label>Tenant claim</label>
+            <input type="text" class="code" value="tenant_id"/>
           </div>
           <div class="form-group">
             <label>Auth</label>
-            <select><option>OAuth2 client credentials</option><option>Basic + cookie session</option><option>mTLS</option></select>
+            <select><option>JWT federado desde Kiboo ERP</option><option>OAuth2 client credentials</option><option>mTLS</option></select>
           </div>
           <div class="form-group">
             <label>Pool size</label>
@@ -3856,8 +3615,8 @@ function renderGateway() {
             <select><option>30 segundos</option><option>1 minuto</option><option>5 minutos</option></select>
           </div>
           <div class="form-group">
-            <label>Drift detection (sync periódico)</label>
-            <select><option>Cada 1h</option><option>Cada 6h</option><option>Solo por webhook</option></select>
+            <label>Modo organizacional</label>
+            <select><option>Federado runtime (recomendado)</option><option>Federado + cache</option></select>
           </div>
         </div>
         <button class="btn btn-primary" style="margin-top:12px">Probar conexión</button>
@@ -3869,15 +3628,15 @@ function renderGateway() {
       <div class="grid-3" style="margin-top:0">
         <div class="rule-line">
           <strong>Conta espera contrato v2</strong>
-          <div class="muted" style="font-size:12px">DTOs estables · breaking changes requieren v3 con deprecation 6 meses</div>
+          <div class="muted" style="font-size:12px">DTOs estables · tenant y scopes siempre vienen desde token</div>
         </div>
         <div class="rule-line">
-          <strong>Adapter SAP B1 v2.4.1</strong>
-          <div class="muted" style="font-size:12px">Compatible con Service Layer v10 · monitoreado en CI</div>
+          <strong>Adapter Kiboo ERP v3.2</strong>
+          <div class="muted" style="font-size:12px">Compatible con integración federada y resolución de organización en runtime</div>
         </div>
         <div class="rule-line">
-          <strong>Cambio de ERP = sólo cambia el Gateway</strong>
-          <div class="muted" style="font-size:12px">Conta.Core no se entera · cero riesgo en el dominio contable</div>
+          <strong>Seguridad delegada al ERP</strong>
+          <div class="muted" style="font-size:12px">Roles, usuarios y permisos se administran en Kiboo ERP; Conta sólo consume el contexto autorizado</div>
         </div>
       </div>
     </div>
