@@ -2963,6 +2963,10 @@ function setAdapter(entity, value) {
 function renderOnboarding() {
   const s = onboardingState.step;
   const stepName = ['','Modo de instalación','Datos de empresa','Estructura organizacional','Plan de cuentas','Posting Rules','Identidad y permisos','Verificación'][s];
+  const adapterValues = Object.values(onboardingState.adapters || {});
+  const federatedCount = adapterValues.filter(v => v === 'federated').length;
+  const hybridCount = adapterValues.filter(v => v === 'hybrid').length;
+  const completion = Math.round((s / 7) * 100);
 
   view.innerHTML = `
     <div class="wizard-shell">
@@ -2976,6 +2980,34 @@ function renderOnboarding() {
           ${s>1?`<button class="btn" onclick="setOnboardingStep(${s-1})">← Atrás</button>`:''}
           ${s<7?`<button class="btn btn-primary" onclick="setOnboardingStep(${s+1})">Siguiente →</button>`:`<button class="btn btn-primary" onclick="alert('Onboarding completado · cliente operativo')">✓ Finalizar</button>`}
         </div>
+      </div>
+
+      <div class="onboarding-kpis">
+        <div class="onboarding-kpi">
+          <div class="k">Modo actual</div>
+          <div class="v">${onboardingState.mode ? onboardingState.mode.toUpperCase() : 'SIN DEFINIR'}</div>
+          <div class="d">Seleccioná la estrategia de integración</div>
+        </div>
+        <div class="onboarding-kpi">
+          <div class="k">Adapters federados</div>
+          <div class="v">${federatedCount}</div>
+          <div class="d">${hybridCount} híbridos · ${adapterValues.length - federatedCount - hybridCount} locales</div>
+        </div>
+        <div class="onboarding-kpi">
+          <div class="k">Eventos ERP detectados</div>
+          <div class="v">${onboardingState.erpPayload.eventsCatalog.length}</div>
+          <div class="d">Catálogo listo para posting rules</div>
+        </div>
+        <div class="onboarding-kpi">
+          <div class="k">Progreso onboarding</div>
+          <div class="v">${completion}%</div>
+          <div class="d">Paso ${s} de 7</div>
+        </div>
+      </div>
+
+      <div class="progress" style="margin-bottom:16px">
+        <div class="progress-bar"><div class="fill" style="width:${completion}%"></div></div>
+        <div class="progress-text">${completion}% completado</div>
       </div>
 
       <div class="wizard-steps">
@@ -3320,6 +3352,14 @@ function renderStep4COA() {
 // ── PASO 5: Posting Rules
 function renderStep5Rules() {
   const p = onboardingState.erpPayload;
+  const healthRows = [
+    { name:'erp.invoice.created', meta:'10/10 dry-runs balanceados', status:'ok' },
+    { name:'erp.bill.received', meta:'10/10 dry-runs balanceados', status:'ok' },
+    { name:'erp.payment.received', meta:'9/10 OK · 1 con cuenta no encontrada', status:'warn' },
+    { name:'erp.payroll.run', meta:'3/3 dry-runs balanceados', status:'ok' },
+  ];
+  const okCount = healthRows.filter(r => r.status === 'ok').length;
+  const score = Math.round((okCount / healthRows.length) * 100);
   return `
     <div class="panel">
       <h3>Mapeo de eventos del ERP → Posting Rules</h3>
@@ -3342,11 +3382,21 @@ function renderStep5Rules() {
       <div class="panel">
         <h3>🧪 Test de integración</h3>
         <p class="muted" style="margin-top:0">Antes de habilitar el flujo en producción, ejecutamos un dry-run con datos reales del ERP.</p>
+        <div class="health-overview">
+          <div class="health-score">
+            <div class="health-score-value">${score}%</div>
+            <div class="health-score-label">health score</div>
+          </div>
+          <div style="flex:1">
+            <div class="progress-bar" style="height:10px"><div class="fill" style="width:${score}%"></div></div>
+            <div class="muted" style="font-size:12px; margin-top:6px">Última corrida: hace 2 min · 1 warning pendiente de mapeo</div>
+          </div>
+        </div>
         <div style="display:flex; flex-direction:column; gap:8px">
-          <div class="health-row"><div class="name">✓ erp.invoice.created</div><div class="meta">10/10 dry-runs balanceados</div></div>
-          <div class="health-row"><div class="name">✓ erp.bill.received</div><div class="meta">10/10 dry-runs balanceados</div></div>
-          <div class="health-row"><div class="name">⚠️ erp.payment.received</div><div class="meta">9/10 OK · 1 con cuenta no encontrada</div></div>
-          <div class="health-row"><div class="name">✓ erp.payroll.run</div><div class="meta">3/3 dry-runs balanceados</div></div>
+          ${healthRows.map(r => `<div class="health-row">
+            <div class="name">${r.status === 'ok' ? '✓' : '⚠️'} ${r.name}</div>
+            <div class="meta">${r.meta}</div>
+          </div>`).join('')}
         </div>
         <button class="btn btn-primary" style="margin-top:12px">▶ Ejecutar dry-run masivo</button>
       </div>
@@ -3585,6 +3635,22 @@ function renderGateway() {
       <div class="card"><div class="label">Latencia p95</div><div class="value">42 <span style="font-size:14px">ms</span></div><div class="delta up">−8 ms vs ayer</div></div>
       <div class="card"><div class="label">Cache hit rate</div><div class="value">94.2%</div><div class="delta up">▲ 1.3 pp</div></div>
       <div class="card"><div class="label">Eventos / min</div><div class="value">${fmtN(127)}</div><div class="delta">last hour</div></div>
+    </div>
+
+    <div class="health-overview" style="margin-top:16px">
+      <div class="health-score">
+        <div class="health-score-value">96%</div>
+        <div class="health-score-label">Gateway health</div>
+      </div>
+      <div style="flex:1">
+        <div class="progress-bar" style="height:10px"><div class="fill" style="width:96%"></div></div>
+        <div class="muted" style="font-size:12px; margin-top:6px">Último check global: hace 40s · 1 endpoint degradado (Items)</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end">
+        <span class="tag ok">7 OK</span>
+        <span class="tag warn">1 Degraded</span>
+        <span class="tag muted">0 Down</span>
+      </div>
     </div>
 
     <div class="grid-2" style="margin-top:20px">

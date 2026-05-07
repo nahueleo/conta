@@ -311,6 +311,16 @@ canvas { max-width: 100%; display: block; }
 
 /* ───── Onboarding wizard ───── */
 .wizard-shell { max-width: 1100px; margin: 0 auto; }
+.onboarding-kpis { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 14px; }
+.onboarding-kpi {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.onboarding-kpi .k { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.onboarding-kpi .v { font-size: 18px; font-weight: 700; margin-top: 6px; color: var(--text); }
+.onboarding-kpi .d { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .wizard-steps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 24px; }
 .wstep { padding: 12px 14px; border-radius: 10px; border:1px solid var(--border); background: var(--panel);
   font-size: 12px; color: var(--muted); position:relative; }
@@ -356,6 +366,30 @@ canvas { max-width: 100%; display: block; }
 .health-row .name { font-weight: 500; }
 .health-row .meta { font-size: 12px; color: var(--muted); }
 
+.health-overview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  margin-bottom: 12px;
+}
+.health-score {
+  min-width: 96px;
+  height: 72px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.health-score-value { font-size: 22px; font-weight: 800; color: var(--ok); line-height: 1; }
+.health-score-label { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
 .progress { display:flex; gap: 10px; align-items:center; padding: 14px; background: var(--bg-2);
   border:1px solid var(--border); border-radius: 10px; }
 .progress-bar { flex:1; height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
@@ -368,6 +402,7 @@ canvas { max-width: 100%; display: block; }
   .rule-editor { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .mode-grid { grid-template-columns: 1fr; }
+  .onboarding-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .wizard-steps { grid-template-columns: repeat(2, 1fr); }
   .adapter-row { grid-template-columns: 1fr; }
 }
