@@ -7,7 +7,7 @@
 | **Admin contable** | Configura plan de cuentas, reglas, periodos, usuarios; aprueba cierres |
 | **Operador** | Carga asientos manuales, consulta reportes |
 | **Auditor externo** | Lectura completa, no escribe |
-| **Sistema externo** | E-commerce, POS, ERP, banco; envía eventos vía API |
+| **Sistema externo** | Kiboo ERP (principal), e-commerce, POS, banco; envía eventos vía API |
 | **Aprobador** | Segundo aprobador para acciones críticas (cierre/reapertura) |
 | **Conta scheduler** | Ejecuta jobs (revaluación FX, alertas, archivado) |
 
@@ -110,7 +110,7 @@
 
 ## CU-04: Postear un asiento desde sistema externo
 
-**Actor:** Sistema externo (ej. e-commerce que reporta una venta).
+**Actor:** Sistema externo (principalmente Kiboo ERP).
 
 **Precondiciones:**
 - Sistema externo tiene API key + secret.
@@ -165,7 +165,7 @@
 **Flujo:**
 
 1. Operador abre "Nuevo asiento manual".
-2. Carga fecha, descripción, líneas DR/CR.
+2. Carga fecha de operación, descripción, líneas DR/CR.
 3. Sistema valida partida doble en cliente (tiempo real) y servidor.
 4. Operador envía → estado `pending_approval` (si la config exige aprobación).
 5. Admin revisa y aprueba → asiento posteado.
@@ -200,7 +200,7 @@
 
 **Flujo:**
 
-1. Operador crea remesa: origen, destino, monto, fecha.
+1. Operador crea remesa: origen, destino, monto, fecha de operación.
 2. Sistema postea asiento de salida (cuenta puente CR, banco origen DR negativo).
 3. Estado `pending`.
 4. Cuando la sucursal destino confirma → sistema postea asiento de entrada (banco destino DR, cuenta puente CR).
@@ -270,7 +270,7 @@
 
 **Flujo:**
 
-1. Selecciona "Sumas y Saldos" + fecha de corte.
+1. Selecciona "Sumas y Saldos" + fecha de snapshot.
 2. Sistema construye el reporte desde proyección o queries Dapper optimizadas.
 3. Devuelve grilla y permite drill-down por cuenta → mayor.
 

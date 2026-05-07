@@ -53,6 +53,8 @@
 | **Moneda funcional** | Moneda en la que se llevan las cuentas (ARS para una empresa argentina, etc.). |
 | **Tipo de cambio histórico** | Tasa vigente al momento de la operación, conservada para futuros reportes. |
 | **Revaluación FX** | Ajuste de saldos en moneda extranjera por variación del tipo de cambio. |
+| **Fecha de operación (`operationDate`)** | Fecha del evento de negocio recibido desde el sistema fuente (Kiboo ERP). Reemplaza el uso de fecha contable en la integración. |
+| **Fecha de snapshot (`snapshotDate`)** | Fecha de corte para construir reportes y KPIs. |
 
 ## Términos técnicos
 
@@ -100,6 +102,8 @@
 | **Idempotency-Key** | Header HTTP que identifica una operación de forma única. |
 | **Trigger** (en posting rules) | Nombre del evento que activa la regla (ej. `external.sale.created`). |
 | **Dry-run** | Ejecución simulada que devuelve el resultado sin persistir. |
+| **Kiboo ERP** | ERP fuente principal del modelo federado de Conta. |
+| **Integración federada** | Patrón donde Conta consulta/recibe datos operativos desde Kiboo ERP en runtime mediante ERP Gateway. |
 
 ## Acrónimos por país
 

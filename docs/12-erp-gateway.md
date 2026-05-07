@@ -3,6 +3,9 @@
 > Microservicio dedicado que aísla a Conta de la API del ERP del cliente.
 > Implementa el patrón **Anti-Corruption Layer (ACL)** de DDD + **Adapter** + **Gateway**.
 
+En el MVP, el ERP principal es **Kiboo ERP** y la integración objetivo es federada.
+Lineamiento temporal: no se usa fecha contable; el gateway propaga `operationDate` en eventos normalizados.
+
 ## 1. Por qué existe
 
 Cuando Conta opera en modo **Federado** (consumiendo datos del ERP en runtime) o **Híbrido** (con sync periódico), la decisión más frecuente y peligrosa es: ¿dónde vive el código que habla con el ERP?

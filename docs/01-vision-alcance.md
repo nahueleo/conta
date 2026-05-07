@@ -14,6 +14,12 @@ Entregar un servicio de contabilidad de doble entrada, multi-tenant, configurabl
 4. Cerrar períodos fiscales con asistencia automatizada.
 5. Obtener reportes contables y de gestión en vivo, con KPIs y alertas.
 
+## 2.1 Alineación con Módulo Contabilidad - Kiboo ERP
+
+- Kiboo ERP es el sistema fuente principal para datos maestros y eventos operativos.
+- Conta consume e integra en modo federado mediante ERP Gateway.
+- No se utiliza fecha contable como dato funcional; se trabaja con fecha de operación (`operationDate`) y fecha de snapshot para reportes (`snapshotDate`).
+
 ## 3. Objetivos
 
 ### Funcionales
@@ -69,7 +75,7 @@ Entregar un servicio de contabilidad de doble entrada, multi-tenant, configurabl
 
 ## 6. Supuestos
 
-1. Cada cliente tiene un **sistema fuente** (POS, ERP, e-commerce) que dispara eventos.
+1. Cada cliente tiene a **Kiboo ERP** como sistema fuente principal que dispara eventos y expone maestros vía gateway.
 2. Los eventos llegan en JSON con un **payload contractual** estable por tipo de operación.
 3. Cada cliente acepta operar con **plan de cuentas y posting rules predefinidos**, modificables.
 4. La empresa cliente **autoriza** los cambios sensibles (cierre, reapertura, plan de cuentas) con un segundo aprobador.

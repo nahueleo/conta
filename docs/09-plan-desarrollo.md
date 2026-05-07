@@ -7,6 +7,7 @@
 - **Filosofía:** modular monolith con API-first; entregar valor end-to-end por fase.
 - **Quality bars:** tests unitarios + integración con Testcontainers, > 80% cobertura del dominio.
 - **Cadencia:** sprints quincenales, demos al final de cada fase.
+- **Integración objetivo MVP:** Kiboo ERP federado vía ERP Gateway.
 
 ## 2. Fases
 
@@ -51,6 +52,7 @@
 **Entregables:**
 - Posting Rules engine (parser NCalc sandboxed).
 - Reglas estándar AR (~12 reglas).
+- Integración federada con Kiboo ERP (eventos + maestros vía Gateway).
 - Azure Functions: `PostJournalEntry`, `BulkPosting`, dry-run.
 - Idempotency keys con persistencia.
 - Subscriber de Service Bus para eventos externos.

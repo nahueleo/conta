@@ -1,7 +1,7 @@
 # Conta · Servicio de Contabilidad
 
 Plataforma de contabilidad multi-tenant, multi-empresa, multi-sucursal y multi-moneda.
-Apta para microempresas y corporaciones, configurable sin tocar código, con APIs elásticas para que sistemas externos contabilicen operaciones en tiempo real.
+Apta para microempresas y corporaciones, configurable sin tocar código, con APIs elásticas para integrarse con **Kiboo ERP** en modo federado y contabilizar operaciones en tiempo real.
 
 > **Estado:** propuesta de proyecto · v1.0 · 2026-05
 
@@ -29,13 +29,19 @@ Apta para microempresas y corporaciones, configurable sin tocar código, con API
 
 ## Resumen ejecutivo
 
+### Alineación Kiboo ERP (obligatoria)
+
+- Kiboo ERP es el sistema fuente principal para maestros y eventos.
+- Conta opera integración federada mediante ERP Gateway (ACL + adapters).
+- No se utiliza el concepto de fecha contable; se usan `operationDate` (evento) y `snapshotDate` (reportes de corte).
+
 ### Problema
 
 Hoy las empresas conviven con planillas Excel, ERPs caros con onboarding de meses o software contable rígido que no acompaña el ritmo del negocio. La realidad es que los ingresos de operaciones no nacen en el sistema contable: nacen en e-commerce, POS, facturación electrónica, RRHH, bancos, etc. Conectarlos manualmente es lento, propenso a errores y opaco.
 
 ### Propuesta
 
-**Conta** es un microservicio de contabilidad de doble entrada, en .NET 9 con SQL Server, expuesto como APIs elásticas (Azure Functions) que cualquier sistema puede invocar para contabilizar operaciones de negocio en tiempo real. La forma de contabilizar cada operación se define como **Posting Rules configurables** — sin desplegar código.
+**Conta** es un microservicio de contabilidad de doble entrada, en .NET 9 con SQL Server, expuesto como APIs elásticas (Azure Functions) para procesar operaciones provenientes de Kiboo ERP en tiempo real. La forma de contabilizar cada operación se define como **Posting Rules configurables** — sin desplegar código.
 
 ### Diferenciales
 

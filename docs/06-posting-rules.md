@@ -2,7 +2,7 @@
 
 ## 1. Idea central
 
-Las posting rules permiten que los **sistemas externos** (POS, e-commerce, payroll, ERP) envíen un evento con un **payload de negocio**, y que Conta lo traduzca a un **asiento contable** sin necesidad de código.
+Las posting rules permiten que los **sistemas externos** (principalmente Kiboo ERP) envíen un evento con un **payload de negocio**, y que Conta lo traduzca a un **asiento contable** sin necesidad de código.
 
 Una regla = "cuando recibo el evento `X` con el payload `P`, posteo este asiento con estas líneas".
 
@@ -101,7 +101,7 @@ Las expresiones usan **NCalc** (parser sandboxed) sobre el payload del evento.
 | `all_accounts_active` | Todas las cuentas referenciadas están activas |
 | `branch_is_required_when_account_requires_it` | Si la cuenta exige Branch, la línea lo provee |
 | `business_unit_is_required_when_account_requires_it` | Idem BU |
-| `period_is_open` | El periodo de `entryDate` está abierto |
+| `period_is_open` | El periodo de `operationDate` está abierto |
 | `currency_is_active` | La moneda existe y está habilitada |
 | `amount_positive` | Todos los montos son > 0 |
 
@@ -118,7 +118,7 @@ Validaciones custom: el admin puede agregar expresiones booleanas en el array `v
 
 Algoritmo al recibir un evento:
 1. Buscar reglas habilitadas con `trigger` y `tenantId`/`companyId` que matcheen.
-2. Filtrar por `validFrom <= entryDate <= validTo` (o `validTo IS NULL`).
+2. Filtrar por `validFrom <= operationDate <= validTo` (o `validTo IS NULL`).
 3. Si hay más de una match → elegir la más específica (companyId > tenantId), luego la de mayor versión.
 4. Si no hay match → error `RuleNotFound`.
 
@@ -127,7 +127,7 @@ Algoritmo al recibir un evento:
 ```
 POST /api/v1/posting-rules/SALE_VAT_21/dry-run
 {
-  "entryDate": "2026-04-15",
+  "operationDate": "2026-04-15",
   "branch": "CABA",
   "businessUnit": "RETAIL",
   "payload": { "total": 121000, "net": 100000 }

@@ -1,5 +1,9 @@
 # 07 · Reportes, KPIs y alertas
 
+Lineamiento transversal:
+- Los reportes se construyen sobre eventos de operación provenientes de Kiboo ERP.
+- No se utiliza fecha contable; los cortes se expresan como `snapshotDate`.
+
 ## 1. Catálogo completo de reportes
 
 ### 1.1 Reportes contables clásicos
@@ -8,7 +12,7 @@
 |---|---|---|---|
 | **Libro Diario** | Listado cronológico de todos los asientos | A demanda | `GET /journal` |
 | **Libro Mayor** | Movimientos y saldo acumulado por cuenta | A demanda | `GET /ledger?account=...` |
-| **Sumas y Saldos** (Trial Balance) | Suma de débitos/créditos y saldo por cuenta a una fecha | Mensual / a demanda | `GET /reports/trial-balance` |
+| **Sumas y Saldos** (Trial Balance) | Suma de débitos/créditos y saldo por cuenta a un snapshot | Mensual / a demanda | `GET /reports/trial-balance?snapshotDate=...` |
 | **Balance General** | Activo, Pasivo, PN; análisis vertical y horizontal | Mensual / cierre | `GET /reports/balance-sheet` |
 | **Estado de Resultados** | Ingresos – Egresos por categoría; comparativos | Mensual / cierre | `GET /reports/income-statement` |
 | **Estado de Flujo de Efectivo** | Métodos directo e indirecto | Mensual | `GET /reports/cashflow` |
@@ -50,13 +54,13 @@ Cada reporte acepta query param `?format=...`:
 
 ### 2.1 Sumas y Saldos
 
-**Inputs:** fecha de corte, sucursal opcional, BU opcional.
+**Inputs:** `snapshotDate`, sucursal opcional, BU opcional.
 **Output:** lista de cuentas con `débito`, `crédito`, `saldo`, agrupadas por tipo (Activo/Pasivo/PN/Ingresos/Egresos).
 
 Estructura de respuesta:
 ```json
 {
-  "asOf": "2026-04-30",
+  "snapshotDate": "2026-04-30",
   "currency": "ARS",
   "groups": [
     {

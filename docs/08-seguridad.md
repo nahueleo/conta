@@ -2,6 +2,10 @@
 
 > Datos contables = datos críticos. Conta los trata como **PII de empresa**: cifrados, auditados, de acceso restringido y sin posibilidad de borrado silencioso.
 
+Contexto de integración:
+- Kiboo ERP es el sistema fuente principal y se integra por ERP Gateway federado.
+- Las validaciones temporales se realizan sobre `operationDate` y no sobre fecha contable.
+
 ## 1. Threat model (resumen STRIDE)
 
 | Amenaza | Vector típico | Mitigación |
@@ -94,7 +98,7 @@
 
 - Toda entrada pasa por **FluentValidation**:
   - Montos: `> 0`, máximo de 4 decimales, dentro de rango razonable (configurable).
-  - Fechas: dentro de un período abierto.
+  - Fechas de operación (`operationDate`): dentro de un período abierto.
   - Códigos de cuenta: existen y están activos.
   - Strings: longitud máxima, sanitización XSS.
 - **Mass-assignment prevenido**: DTOs explícitos por endpoint, nunca bind a entidades de dominio.

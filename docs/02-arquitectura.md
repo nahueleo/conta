@@ -56,6 +56,8 @@ Internet
 └───────────┘  └─────────────┘         └────────────────┘
 
 Servicios laterales: Key Vault · Blob Storage (WORM) · App Insights
+
+Integración externa principal: Kiboo ERP mediante `Conta.ErpGateway` en modo federado.
 ```
 
 ## 3. Solución (proyectos)
@@ -109,6 +111,9 @@ Las reglas de contabilización viven en `PostingRule` (tabla) y se versionan. Ca
 
 ### 4.6 Periodos cerrados son sólo lectura
 Una vez cerrado, ningún asiento puede afectar un período. Reapertura requiere doble aprobación + audit log.
+
+### 4.7 Integración federada con Kiboo ERP
+Conta.Core no consume SDKs ni contratos del ERP directamente. Todo acceso a Kiboo ERP ocurre por `Conta.ErpGateway` (ACL), con contratos Conta-shaped estables.
 
 ## 5. Modelo de procesos
 

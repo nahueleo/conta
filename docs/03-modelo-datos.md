@@ -209,7 +209,7 @@ UQ: `(CompanyId, Code, Version)`.
 | Uid | UNIQUEIDENTIFIER | UQ, exposed externamente |
 | CompanyId | UNIQUEIDENTIFIER | FK |
 | FiscalPeriodId | UNIQUEIDENTIFIER | FK |
-| EntryDate | DATE | |
+| OperationDate | DATE | Fecha de operación proveniente del evento de negocio |
 | PostedAt | DATETIME2 | |
 | PostedBy | NVARCHAR(100) | |
 | Description | NVARCHAR(500) | |
@@ -226,7 +226,7 @@ UQ: `(CompanyId, Code, Version)`.
 Trigger SQL `INSTEAD OF UPDATE, DELETE` que lanza error.
 
 UQ: `(CompanyId, IdempotencyKey)` (parcial, donde IdempotencyKey IS NOT NULL).
-IX: `(CompanyId, EntryDate)`, `(CompanyId, FiscalPeriodId)`, `(CompanyId, Source, SourceReference)`.
+IX: `(CompanyId, OperationDate)`, `(CompanyId, FiscalPeriodId)`, `(CompanyId, Source, SourceReference)`.
 
 ### 2.14 `JournalEntryLine` ⛔ inmutable
 
@@ -345,7 +345,7 @@ UQ: `(Scope, ScopeId, Key)`. Temporal table.
 
 Mantenidas por subscriber del evento `JournalEntryPosted`:
 
-- `BalanceByAccount(CompanyId, AccountId, AsOfDate, Debit, Credit, Balance)` — saldo por cuenta a fecha de cierre de cada día.
+- `BalanceByAccount(CompanyId, AccountId, SnapshotDate, Debit, Credit, Balance)` — saldo por cuenta a fecha de snapshot diario.
 - `BalanceByBranchBU(CompanyId, BranchId, BusinessUnitId, AccountType, Period, Amount)` — agregaciones para dashboards.
 - `OpenReceivables(CompanyId, CustomerRef, AmountDue, DueDate, AgingBucket)` — para CxC y antigüedad.
 
@@ -353,18 +353,18 @@ Mantenidas por subscriber del evento `JournalEntryPosted`:
 
 | Caso | Índice |
 |---|---|
-| Mayor por cuenta y rango de fechas | `JournalEntryLine(AccountId)` + `JournalEntry(EntryDate)` |
+| Mayor por cuenta y rango de fechas | `JournalEntryLine(AccountId)` + `JournalEntry(OperationDate)` |
 | Buscar por origen externo | `JournalEntry(CompanyId, Source, SourceReference)` |
 | Idempotencia | UQ `(CompanyId, IdempotencyKey)` parcial |
 | Reportes por sucursal/BU | filtered IX `(CompanyId, BranchId, BusinessUnitId)` |
-| Reportes por período | `(CompanyId, FiscalPeriodId, EntryDate)` |
+| Reportes por período | `(CompanyId, FiscalPeriodId, OperationDate)` |
 | Plan de cuentas subárbol | `(CompanyId, Path)` con `Path LIKE '/1/1.1/%'` |
 
 ## 4. Particionamiento
 
 Para tenants grandes (> 10M asientos/año):
 
-- Particionar `JournalEntryLine` por `EntryDate` (año o trimestre).
+- Particionar `JournalEntryLine` por `OperationDate` (año o trimestre).
 - Switch-out automático de particiones cerradas → archivo histórico.
 
 ## 5. Consideraciones de cifrado

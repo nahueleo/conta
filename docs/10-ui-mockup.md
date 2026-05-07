@@ -2,6 +2,11 @@
 
 > El mockup vive en [`/mockup/index.html`](../mockup/index.html). Es un SPA estático (HTML + CSS + JS vanilla + Chart.js por CDN) con routing por hash. No requiere build ni backend.
 
+Este mockup está alineado al modelo federado de Módulo Contabilidad - Kiboo ERP:
+- navegación y pantallas enfatizan integración vía ERP Gateway,
+- filtros y cortes de reportes usan `snapshotDate`,
+- no se utiliza el concepto de fecha contable.
+
 ## 1. Cómo correrlo
 
 **Opción A — Abrir directo en Chrome:**

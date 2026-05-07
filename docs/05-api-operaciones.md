@@ -4,6 +4,11 @@ Base URL: `https://api.conta.example.com/v1`
 
 Toda la API es REST + JSON. Documentación OpenAPI servida en `/openapi.json` y portal interactivo en `/docs`.
 
+Esta API está alineada al modelo federado con Kiboo ERP:
+- Kiboo ERP es la fuente principal de eventos y maestros.
+- Conta procesa eventos normalizados por ERP Gateway.
+- No se usa fecha contable; se usan `operationDate` (evento) y `snapshotDate` (reportes).
+
 ## 1. Convenciones generales
 
 ### 1.1 Autenticación
@@ -59,7 +64,7 @@ JWT con claims:
   "instance": "/api/v1/journal/post",
   "traceId": "00-abc...-def-01",
   "errors": [
-    { "field": "entryDate", "code": "PeriodClosed", "message": "..." }
+    { "field": "operationDate", "code": "PeriodClosed", "message": "..." }
   ]
 }
 ```
@@ -103,7 +108,7 @@ Postea un asiento desde un sistema externo o por API directa.
 ```json
 {
   "trigger": "external.sale.created",
-  "entryDate": "2026-04-15",
+  "operationDate": "2026-04-15",
   "description": "Venta factura A-0001-00045",
   "sourceReference": "INV-0001-00045",
   "branch": "CABA",
@@ -121,7 +126,7 @@ Postea un asiento desde un sistema externo o por API directa.
 ```json
 {
   "trigger": "manual",
-  "entryDate": "2026-04-15",
+  "operationDate": "2026-04-15",
   "description": "Ajuste manual",
   "lines": [
     { "account": "1.1.02.001", "debit": 100, "branch": "CABA" },
@@ -292,13 +297,13 @@ Respuesta con saldo acumulado por línea.
 
 | Path | Descripción |
 |---|---|
-| GET `/reports/trial-balance?asOf=...` | Sumas y Saldos |
-| GET `/reports/balance-sheet?asOf=...&compareWith=...` | Balance General |
+| GET `/reports/trial-balance?snapshotDate=...` | Sumas y Saldos |
+| GET `/reports/balance-sheet?snapshotDate=...&compareWith=...` | Balance General |
 | GET `/reports/income-statement?from=...&to=...` | Estado de Resultados |
 | GET `/reports/cashflow?from=...&to=...&method=direct\|indirect` | Flujo de efectivo |
 | GET `/reports/equity-evolution?fromYear=...&toYear=...` | Evolución del PN |
-| GET `/reports/aged-receivables?asOf=...` | Antigüedad CxC |
-| GET `/reports/aged-payables?asOf=...` | Antigüedad CxP |
+| GET `/reports/aged-receivables?snapshotDate=...` | Antigüedad CxC |
+| GET `/reports/aged-payables?snapshotDate=...` | Antigüedad CxP |
 | GET `/reports/profitability/branch?period=...` | Rentabilidad por sucursal |
 | GET `/reports/profitability/business-unit?period=...` | Rentabilidad por BU |
 | GET `/reports/expenses/breakdown?from=...&to=...` | Análisis de gastos |
@@ -315,7 +320,7 @@ Cada reporte acepta `format=json|csv|xlsx|pdf` (default JSON).
 | Path | Descripción |
 |---|---|
 | GET `/dashboards/exec` | KPIs principales (activo, pasivo, PN, resultado) |
-| GET `/dashboards/ratios?asOf=...` | Liquidez, ROE, ROA, endeudamiento |
+| GET `/dashboards/ratios?snapshotDate=...` | Liquidez, ROE, ROA, endeudamiento |
 | GET `/dashboards/forecast/cashflow?days=90` | Cashflow proyectado |
 | GET `/dashboards/anomalies?period=...` | Asientos sospechosos |
 
@@ -389,6 +394,10 @@ Burst del 2x permitido en ventana de 10 segundos.
 - Cambios breaking incrementan major.
 - Cambios aditivos no requieren nueva versión.
 - Deprecación: header `Sunset` con fecha; ventana mínima de 6 meses.
+
+Compatibilidad temporal:
+- `entryDate` y `asOf` se mantienen sólo por compatibilidad retro.
+- Nuevas integraciones deben usar `operationDate` y `snapshotDate`.
 
 ## 5. SDK oficiales
 
