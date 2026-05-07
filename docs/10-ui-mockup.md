@@ -35,6 +35,7 @@ Sidebar
 ├── 📈 Reportes                     #/reportes
 │   ├── Sumas y Saldos
 │   ├── Balance General             #/reportes/balance
+│   ├── Balance analítico           #/reportes/balance-analitico
 │   ├── Estado de Resultados
 │   ├── Flujo de Efectivo           #/reportes/cashflow
 │   ├── Evolución del PN            #/reportes/pn
@@ -91,6 +92,7 @@ Sidebar
 - Detalle por reporte:
   - **Sumas y Saldos**: tabla de cuentas con débito, crédito, saldo agrupados por tipo.
   - **Balance General**: estructura Activo/Pasivo/PN; análisis vertical y horizontal; comparativo con período anterior.
+  - **Balance analítico**: detalle por cuenta con filtros por tipo y sector; totales Debe/Haber y saldo neto por sector.
   - **Estado de Resultados**: cascade chart + tabla con líneas estándar.
   - **Flujo de Efectivo**: switch entre método directo e indirecto; gráfico mensual.
   - **Evolución del PN**: tabla de variaciones por concepto; gráfico de stacked bar.
@@ -118,6 +120,8 @@ Sidebar
 - Datos de empresa (incluido CUIT marcado como Always Encrypted).
 - Sucursales.
 - Unidades de negocio.
+- Segmentación por sector.
+- Configuración de cuentas por tipo/sector.
 - Periodos fiscales.
 - Usuarios y roles con 2FA.
 - Panel de seguridad con controles activos.

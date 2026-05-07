@@ -9,6 +9,7 @@ const routes = {
   'reglas':                 renderReglas,
   'reportes':               renderReportes,
   'reportes/balance':       renderReporteBalance,
+  'reportes/balance-analitico': renderReporteBalanceAnalitico,
   'reportes/cashflow':      renderReporteCashflow,
   'reportes/pn':            renderReportePN,
   'reportes/aged-cxc':      renderReporteAgedCxC,
@@ -598,6 +599,7 @@ function renderReportes() {
       <div class="grid-3" style="margin-top:0">
         ${[
           ['Balance General','Activo · Pasivo · PN con análisis vertical y horizontal','reportes/balance'],
+          ['Balance analítico','Detalle por cuenta con filtros por tipo y sector','reportes/balance-analitico'],
           ['Flujo de Efectivo','Métodos directo e indirecto','reportes/cashflow'],
           ['Estado de Evolución del PN','Variaciones por período','reportes/pn'],
           ['Antigüedad CxC','Buckets 0-30 / 31-60 / 61-90 / +90','reportes/aged-cxc'],
@@ -837,6 +839,45 @@ function renderConfig() {
         </ul>
       </div>
     </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Segmentación por sector</h3>
+        <table class="table">
+          <thead><tr><th>Código</th><th>Sector</th><th>Uso principal</th><th>Estado</th></tr></thead>
+          <tbody>
+            ${DATA.sectores.map(s => `<tr>
+              <td><span class="kbd">${s.code}</span></td>
+              <td>${s.name}</td>
+              <td>${s.use}</td>
+              <td>${s.active ? '<span class="tag ok">activo</span>' : '<span class="tag muted">inactivo</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:10px; display:flex; gap:8px">
+          <button class="btn btn-primary">+ Nuevo sector</button>
+          <button class="btn">Editar segmentación</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Configuración de cuentas por tipo/sector</h3>
+        <table class="table">
+          <thead><tr><th>Tipo</th><th>Sector</th><th>Cuenta por defecto</th><th>Regla</th></tr></thead>
+          <tbody>
+            ${DATA.cuentasPorTipoSector.map(r => `<tr>
+              <td><span class="tag muted">${r.type}</span></td>
+              <td>${r.sector}</td>
+              <td><span class="kbd">${r.account}</span> ${r.accountName}</td>
+              <td class="muted">${r.rule}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:10px; display:flex; gap:8px">
+          <button class="btn btn-primary">+ Nuevo mapeo</button>
+          <button class="btn">Exportar matriz</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -937,6 +978,76 @@ function renderReporteBalance() {
         { label:'Anterior', data:[8400000,5310500,2900000,2200000,5000000,3610500], backgroundColor:'#243064' },
       ]},
     options: chartOpts()
+  }));
+}
+
+function renderReporteBalanceAnalitico() {
+  const rows = DATA.balanceAnalitico;
+  const totalDr = rows.reduce((s, r) => s + r.dr, 0);
+  const totalCr = rows.reduce((s, r) => s + r.cr, 0);
+
+  view.innerHTML = `
+    ${pageHeader('Balance analítico', 'Detalle por cuenta con segmentación por tipo y sector',
+      `<select><option>Moneda: ARS</option><option>USD</option><option>BRL</option></select>
+       <select><option>Sector: Todos</option>${DATA.sectores.map(s => `<option>${s.code} · ${s.name}</option>`).join('')}</select>`, 'trial-balance')}
+    <div class="filters">
+      <input type="date" value="2026-04-01"/>
+      <span class="sep">→</span>
+      <input type="date" value="2026-04-30"/>
+      <select><option>Tipo: Todos</option><option>Activo</option><option>Pasivo</option><option>Patrimonio</option><option>Ingresos</option><option>Egresos</option></select>
+      <select><option>Cuenta: Todas</option><option>Sólo cuentas de movimiento</option><option>Sólo cuentas resumen</option></select>
+      <button class="btn btn-primary">Aplicar</button>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Total Debe</div><div class="value">${fmt(totalDr)}</div></div>
+      <div class="card"><div class="label">Total Haber</div><div class="value">${fmt(totalCr)}</div></div>
+      <div class="card"><div class="label">Diferencia</div><div class="value" style="color:${totalDr-totalCr===0?'var(--ok)':'var(--danger)'}">${fmt(totalDr-totalCr)}</div></div>
+      <div class="card"><div class="label">Sectores activos</div><div class="value">${DATA.sectores.filter(s => s.active).length}</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Detalle analítico</h3>
+        <table class="table">
+          <thead><tr><th>Cuenta</th><th>Tipo</th><th>Sector</th><th class="num">Debe</th><th class="num">Haber</th><th class="num">Saldo</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr>
+              <td><span class="kbd">${r.code}</span> ${r.name}</td>
+              <td><span class="tag muted">${r.type}</span></td>
+              <td>${r.sector}</td>
+              <td class="num">${fmt(r.dr)}</td>
+              <td class="num">${fmt(r.cr)}</td>
+              <td class="num"><strong>${fmt(r.dr-r.cr)}</strong></td>
+            </tr>`).join('')}
+            <tr style="background:var(--panel-2); font-weight:600">
+              <td colspan="3">Total</td>
+              <td class="num">${fmt(totalDr)}</td>
+              <td class="num">${fmt(totalCr)}</td>
+              <td class="num">${fmt(totalDr-totalCr)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>Saldo neto por sector</h3>
+        <div class="chart-wrap h-md"><canvas id="chartBalanceAnaliticoSector"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  activeCharts.push(new Chart(document.getElementById('chartBalanceAnaliticoSector'), {
+    type:'bar',
+    data:{
+      labels: DATA.balanceAnaliticoSector.map(s => s.sector),
+      datasets:[{
+        label:'Saldo',
+        data: DATA.balanceAnaliticoSector.map(s => s.balance),
+        backgroundColor:['#6c8cff', '#4dd4ac', '#f5a524', '#ef4444']
+      }]
+    },
+    options: chartOpts({legend:false})
   }));
 }
 

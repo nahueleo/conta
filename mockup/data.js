@@ -141,6 +141,38 @@ const DATA = {
     { code:'5.3.01.001', name:'Sueldos y jornales',   dr:380000,  cr:0 },
   ],
 
+  balanceAnalitico: [
+    { code:'1.1.02.001', name:'Banco Galicia',       type:'Activo',     sector:'Operación',      dr:5800000, cr:2400000 },
+    { code:'1.1.03.001', name:'Deudores por venta',  type:'Activo',     sector:'Comercial',      dr:2700000, cr: 900000 },
+    { code:'2.1.01.001', name:'Proveedores',         type:'Pasivo',     sector:'Abastecimiento', dr:1200000, cr:3000000 },
+    { code:'2.1.05.001', name:'IVA Débito Fiscal',   type:'Pasivo',     sector:'Fiscal',         dr: 100000, cr:1040000 },
+    { code:'4.1.01.001', name:'Ventas',              type:'Ingresos',   sector:'Comercial',      dr:      0, cr:1100000 },
+    { code:'5.3.01.001', name:'Sueldos y jornales',  type:'Egresos',    sector:'Operación',      dr: 380000, cr:      0 },
+  ],
+
+  balanceAnaliticoSector: [
+    { sector:'Operación',      balance: 3780000 },
+    { sector:'Comercial',      balance:  700000 },
+    { sector:'Abastecimiento', balance:-1800000 },
+    { sector:'Fiscal',         balance: -940000 },
+  ],
+
+  sectores: [
+    { code:'SEC-OPS',  name:'Operación',      use:'Tesorería, sueldos, caja', active:true },
+    { code:'SEC-COM',  name:'Comercial',      use:'Ventas, cobranzas y clientes', active:true },
+    { code:'SEC-ABS',  name:'Abastecimiento', use:'Compras y proveedores', active:true },
+    { code:'SEC-FISC', name:'Fiscal',         use:'IVA, impuestos y percepciones', active:true },
+  ],
+
+  cuentasPorTipoSector: [
+    { type:'Ingresos', sector:'Comercial',      account:'4.1.01.001', accountName:'Ventas',             rule:'Default ventas locales' },
+    { type:'Ingresos', sector:'Operación',      account:'4.1.02.001', accountName:'Ventas online',      rule:'Canal digital' },
+    { type:'Egresos',  sector:'Abastecimiento', account:'5.1.01.001', accountName:'Costo de mercadería',rule:'Compras de stock' },
+    { type:'Egresos',  sector:'Operación',      account:'5.3.01.001', accountName:'Sueldos y jornales', rule:'Nómina mensual' },
+    { type:'Pasivo',   sector:'Fiscal',         account:'2.1.05.001', accountName:'IVA Débito Fiscal',  rule:'Determinación fiscal' },
+    { type:'Activo',   sector:'Operación',      account:'1.1.02.001', accountName:'Banco Galicia',      rule:'Cuenta bancaria principal' },
+  ],
+
   agedReceivables: {
     labels: ['0-30','31-60','61-90','+90'],
     values: [1200000, 380000, 150000, 70000],
